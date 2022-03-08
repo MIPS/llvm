@@ -14,6 +14,12 @@ include "llvm/Target/Target.td"
 
 include "RISCVFeatures.td"
 
+def Proci8500 : SubtargetFeature<"i8500", "RISCVProcFamily", "Others",
+                                   "i8500 processor">;
+
+def Procp8700 : SubtargetFeature<"p8700", "RISCVProcFamily", "Others",
+                                   "p8700 processor">;
+
 //===----------------------------------------------------------------------===//
 // Named operands for CSR instructions.
 //===----------------------------------------------------------------------===//
@@ -45,6 +51,8 @@ include "RISCVSchedSiFive7.td"
 include "RISCVSchedSiFiveP400.td"
 include "RISCVSchedSyntacoreSCR1.td"
 include "RISCVSchedXiangShanNanHu.td"
+include "RISCVSchedi8500.td"
+include "RISCVSchedp8700.td"
 
 //===----------------------------------------------------------------------===//
 // RISC-V processors supported.

@@ -198,6 +198,16 @@ def SIFIVE_U74 : RISCVProcessorModel<"sifive-u74",
                                       FeatureStdExtC],
                                      [TuneSiFive7]>;
 
+def SIFIVE_U74_NO_SCHED : ProcessorModel<"sifive-u74NoSched",
+                                         NoSchedModel,
+                                         [Feature64Bit,
+                                          FeatureStdExtM,
+                                          FeatureStdExtA,
+                                          FeatureStdExtF,
+                                          FeatureStdExtD,
+                                          FeatureStdExtC],
+                                         [TuneSiFive7]>;
+
 def SIFIVE_X280 : RISCVProcessorModel<"sifive-x280", SiFive7Model,
                                       [Feature64Bit,
                                        FeatureStdExtZifencei,
@@ -214,6 +224,19 @@ def SIFIVE_X280 : RISCVProcessorModel<"sifive-x280", SiFive7Model,
                                        FeatureStdExtZbb],
                                       [TuneSiFive7,
                                        TuneDLenFactor2]>;
+                                       
+def I8500 : RISCVProcessorModel<"i8500",
+                                i8500Model,
+                                [Feature64Bit,
+                                FeatureStdExtM,
+                                FeatureStdExtA,
+                                FeatureStdExtF,
+                                FeatureStdExtD,
+                                FeatureStdExtC,
+                                FeatureStdExtZba,
+                                FeatureStdExtZbb],
+                                [Proci8500]>;
+
 
 def SIFIVE_P450 : RISCVProcessorModel<"sifive-p450", SiFiveP400Model,
                                       [Feature64Bit,
@@ -244,6 +267,18 @@ def SIFIVE_P450 : RISCVProcessorModel<"sifive-p450", SiFiveP400Model,
                                        TuneConditionalCompressedMoveFusion,
                                        TuneLUIADDIFusion,
                                        TuneAUIPCADDIFusion]>;
+                                       
+def P8700 : RISCVProcessorModel<"p8700",
+                                p8700Model,
+                                [Feature64Bit,
+                                 FeatureStdExtM,
+                                 FeatureStdExtA,
+                                 FeatureStdExtF,
+                                 FeatureStdExtD,
+                                 FeatureStdExtC,
+                                 FeatureStdExtZba,
+                                 FeatureStdExtZbb],
+                                [Procp8700]>;
 
 def SIFIVE_P670 : RISCVProcessorModel<"sifive-p670", NoSchedModel,
                                       [Feature64Bit,
