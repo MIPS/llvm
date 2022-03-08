@@ -14,6 +14,9 @@ include "llvm/Target/Target.td"
 
 include "RISCVFeatures.td"
 
+def Procp8700
+    : SubtargetFeature<"p8700", "RISCVProcFamily", "Others", "p8700 processor">;
+
 //===----------------------------------------------------------------------===//
 // RISC-V profiles supported.
 //===----------------------------------------------------------------------===//
@@ -54,6 +57,7 @@ include "RISCVSchedSyntacoreSCR1.td"
 include "RISCVSchedSyntacoreSCR345.td"
 include "RISCVSchedSyntacoreSCR7.td"
 include "RISCVSchedXiangShanNanHu.td"
+include "RISCVSchedp8700.td"
 
 //===----------------------------------------------------------------------===//
 // RISC-V processors supported.

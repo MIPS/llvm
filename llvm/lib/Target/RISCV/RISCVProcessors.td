@@ -271,6 +271,17 @@ def SIFIVE_P470 : RISCVProcessorModel<"sifive-p470", SiFiveP400Model,
                                       !listconcat(SiFiveP400TuneFeatures,
                                                   [TuneNoSinkSplatOperands])>;
 
+def P8700 : RISCVProcessorModel<"p8700",
+                                p8700Model,
+                                [Feature64Bit,
+                                 FeatureStdExtM,
+                                 FeatureStdExtA,
+                                 FeatureStdExtF,
+                                 FeatureStdExtD,
+                                 FeatureStdExtC,
+                                 FeatureStdExtZba,
+                                 FeatureStdExtZbb],
+                                [Procp8700]>;
 
 def SIFIVE_P670 : RISCVProcessorModel<"sifive-p670", SiFiveP600Model,
                                       !listconcat(RVA22U64Features,
