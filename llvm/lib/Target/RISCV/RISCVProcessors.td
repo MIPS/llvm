@@ -184,6 +184,29 @@ def SIFIVE_X280 : RISCVProcessorModel<"sifive-x280", SiFive7Model,
                                        FeatureStdExtZbb],
                                       [TuneSiFive7,
                                        TuneDLenFactor2]>;
+                                       
+def I8500 : RISCVProcessorModel<"i8500",
+                                i8500Model,
+                                [Feature64Bit,
+                                FeatureStdExtM,
+                                FeatureStdExtA,
+                                FeatureStdExtF,
+                                FeatureStdExtD,
+                                FeatureStdExtC,
+                                FeatureStdExtZba,
+                                FeatureStdExtZbb],
+                                [Proci8500]>;
+
+def I8500_NO_SCHED : RISCVProcessorModel<"i8500NoSched",
+                                         NoSchedModel,
+                                         [Feature64Bit,
+                                         FeatureStdExtM,
+                                         FeatureStdExtA,
+                                         FeatureStdExtF,
+                                         FeatureStdExtD,
+                                         FeatureStdExtC,
+                                         FeatureStdExtZba,
+                                         FeatureStdExtZbb]>;
 
 def SYNTACORE_SCR1_BASE : RISCVProcessorModel<"syntacore-scr1-base",
                                               SyntacoreSCR1Model,
