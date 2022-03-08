@@ -266,6 +266,18 @@ def SIFIVE_P450 : RISCVProcessorModel<"sifive-p450", SiFiveP400Model,
                                        TuneLUIADDIFusion,
                                        TuneAUIPCADDIFusion,
                                        FeaturePostRAScheduler]>;
+            
+def P8700 : RISCVProcessorModel<"p8700",
+                                p8700Model,
+                                [Feature64Bit,
+                                 FeatureStdExtM,
+                                 FeatureStdExtA,
+                                 FeatureStdExtF,
+                                 FeatureStdExtD,
+                                 FeatureStdExtC,
+                                 FeatureStdExtZba,
+                                 FeatureStdExtZbb],
+                                [Procp8700]>;
 
 def SIFIVE_P670 : RISCVProcessorModel<"sifive-p670", SiFiveP600Model,
                                       [Feature64Bit,
