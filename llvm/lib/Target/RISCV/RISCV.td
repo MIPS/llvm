@@ -17,6 +17,14 @@ include "RISCVFeatures.td"
 def Procp8700 : SubtargetFeature<"p8700", "RISCVProcFamily", "Others",
                                    "p8700 processor">;
 
+def FeatureCCMov : SubtargetFeature<"ccmov", "HasCCMov",
+                                   "true", "Using CCMov",
+                                   [Feature64Bit]>;
+
+def HasCCMov : Predicate<"Subtarget->hasCCMov()">,
+                        AssemblerPredicate<(all_of FeatureCCMov),
+                        "'ccmov' instruction">;
+
 //===----------------------------------------------------------------------===//
 // RISC-V profiles supported.
 //===----------------------------------------------------------------------===//
