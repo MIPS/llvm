@@ -306,8 +306,11 @@ RISCVTargetLowering::RISCVTargetLowering(const TargetMachine &TM,
   if (Subtarget.is64Bit())
     setOperationAction(ISD::ABS, MVT::i32, Custom);
 
-  if (!Subtarget.hasVendorXVentanaCondOps())
+  if (Subtarget.hasCCMov()) {
+    setOperationAction(ISD::SELECT, XLenVT, Legal);
+  } else if (!Subtarget.hasVendorXVentanaCondOps()) {
     setOperationAction(ISD::SELECT, XLenVT, Custom);
+  }
 
   static const unsigned FPLegalNodeTypes[] = {
       ISD::FMINNUM,        ISD::FMAXNUM,       ISD::LRINT,
