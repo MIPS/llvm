@@ -305,17 +305,20 @@ RISCVTargetLowering::RISCVTargetLowering(const TargetMachine &TM,
     setOperationAction(ISD::CTPOP, XLenVT, Expand);
   }
 
+  if (Subtarget.hasStdExtZbt() || Subtarget.hasCustomCMov()) {
+    setOperationAction(ISD::SELECT, XLenVT, Legal);
+  } else {
+    setOperationAction(ISD::SELECT, XLenVT, Custom);
+  }
+
   if (Subtarget.hasStdExtZbt()) {
     setOperationAction(ISD::FSHL, XLenVT, Custom);
     setOperationAction(ISD::FSHR, XLenVT, Custom);
-    setOperationAction(ISD::SELECT, XLenVT, Legal);
 
     if (Subtarget.is64Bit()) {
       setOperationAction(ISD::FSHL, MVT::i32, Custom);
       setOperationAction(ISD::FSHR, MVT::i32, Custom);
     }
-  } else {
-    setOperationAction(ISD::SELECT, XLenVT, Custom);
   }
 
   static const ISD::CondCode FPCCToExpand[] = {
@@ -10972,8 +10975,8 @@ RISCVTargetLowering::BuildSDIVPow2(SDNode *N, const APInt &Divisor,
   assert((Divisor.isPowerOf2() || Divisor.isNegatedPowerOf2()) &&
          "Unexpected divisor!");
 
-  // Conditional move is needed, so do the transformation iff Zbt is enabled.
-  if (!Subtarget.hasStdExtZbt())
+  // Conditional move is needed, so do the transformation iff Zbt or ccmov is enabled.
+  if (!Subtarget.hasStdExtZbt() && !Subtarget.hasCustomCMov())
     return SDValue();
 
   // When |Divisor| >= 2 ^ 12, it isn't profitable to do such transformation.

@@ -7,6 +7,8 @@
 ; RUN:   | FileCheck %s -check-prefix=RV64I
 ; RUN: llc -mtriple=riscv64 -mattr=+experimental-zbt -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s -check-prefix=RV64ZBT
+; RUN: llc -mtriple=riscv64 -mattr=+ccmov -verify-machineinstrs < %s \
+; RUN:   | FileCheck %s -check-prefix=RV64CCMOV
 
 define i32 @sdiv32_pow2_2(i32 %a) {
 ; RV32I-LABEL: sdiv32_pow2_2:
@@ -36,6 +38,13 @@ define i32 @sdiv32_pow2_2(i32 %a) {
 ; RV64ZBT-NEXT:    addw a0, a0, a1
 ; RV64ZBT-NEXT:    sraiw a0, a0, 1
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv32_pow2_2:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    srliw a1, a0, 31
+; RV64CCMOV-NEXT:    addw a0, a0, a1
+; RV64CCMOV-NEXT:    sraiw a0, a0, 1
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i32 %a, 2
   ret i32 %div
@@ -73,6 +82,14 @@ define i32 @sdiv32_pow2_negative_2(i32 %a) {
 ; RV64ZBT-NEXT:    sraiw a0, a0, 1
 ; RV64ZBT-NEXT:    neg a0, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv32_pow2_negative_2:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    srliw a1, a0, 31
+; RV64CCMOV-NEXT:    addw a0, a0, a1
+; RV64CCMOV-NEXT:    sraiw a0, a0, 1
+; RV64CCMOV-NEXT:    neg a0, a0
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i32 %a, -2
   ret i32 %div
@@ -111,6 +128,15 @@ define i32 @sdiv32_pow2_2048(i32 %a) {
 ; RV64ZBT-NEXT:    cmov a0, a1, a2, a0
 ; RV64ZBT-NEXT:    sraiw a0, a0, 11
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv32_pow2_2048:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    sext.w a1, a0
+; RV64CCMOV-NEXT:    addi a2, a0, 2047
+; RV64CCMOV-NEXT:    slti a1, a1, 0
+; RV64CCMOV-NEXT:    ccmov a0, a1, a2, a0
+; RV64CCMOV-NEXT:    sraiw a0, a0, 11
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i32 %a, 2048
   ret i32 %div
@@ -153,6 +179,16 @@ define i32 @sdiv32_pow2_negative_2048(i32 %a) {
 ; RV64ZBT-NEXT:    sraiw a0, a0, 11
 ; RV64ZBT-NEXT:    neg a0, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv32_pow2_negative_2048:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    sext.w a1, a0
+; RV64CCMOV-NEXT:    addi a2, a0, 2047
+; RV64CCMOV-NEXT:    slti a1, a1, 0
+; RV64CCMOV-NEXT:    ccmov a0, a1, a2, a0
+; RV64CCMOV-NEXT:    sraiw a0, a0, 11
+; RV64CCMOV-NEXT:    neg a0, a0
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i32 %a, -2048
   ret i32 %div
@@ -190,6 +226,14 @@ define i32 @sdiv32_pow2_4096(i32 %a) {
 ; RV64ZBT-NEXT:    addw a0, a0, a1
 ; RV64ZBT-NEXT:    sraiw a0, a0, 12
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv32_pow2_4096:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    sraiw a1, a0, 31
+; RV64CCMOV-NEXT:    srliw a1, a1, 20
+; RV64CCMOV-NEXT:    addw a0, a0, a1
+; RV64CCMOV-NEXT:    sraiw a0, a0, 12
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i32 %a, 4096
   ret i32 %div
@@ -231,6 +275,15 @@ define i32 @sdiv32_pow2_negative_4096(i32 %a) {
 ; RV64ZBT-NEXT:    sraiw a0, a0, 12
 ; RV64ZBT-NEXT:    neg a0, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv32_pow2_negative_4096:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    sraiw a1, a0, 31
+; RV64CCMOV-NEXT:    srliw a1, a1, 20
+; RV64CCMOV-NEXT:    addw a0, a0, a1
+; RV64CCMOV-NEXT:    sraiw a0, a0, 12
+; RV64CCMOV-NEXT:    neg a0, a0
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i32 %a, -4096
   ret i32 %div
@@ -268,6 +321,14 @@ define i32 @sdiv32_pow2_65536(i32 %a) {
 ; RV64ZBT-NEXT:    addw a0, a0, a1
 ; RV64ZBT-NEXT:    sraiw a0, a0, 16
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv32_pow2_65536:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    sraiw a1, a0, 31
+; RV64CCMOV-NEXT:    srliw a1, a1, 16
+; RV64CCMOV-NEXT:    addw a0, a0, a1
+; RV64CCMOV-NEXT:    sraiw a0, a0, 16
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i32 %a, 65536
   ret i32 %div
@@ -309,6 +370,15 @@ define i32 @sdiv32_pow2_negative_65536(i32 %a) {
 ; RV64ZBT-NEXT:    sraiw a0, a0, 16
 ; RV64ZBT-NEXT:    neg a0, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv32_pow2_negative_65536:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    sraiw a1, a0, 31
+; RV64CCMOV-NEXT:    srliw a1, a1, 16
+; RV64CCMOV-NEXT:    addw a0, a0, a1
+; RV64CCMOV-NEXT:    sraiw a0, a0, 16
+; RV64CCMOV-NEXT:    neg a0, a0
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i32 %a, -65536
   ret i32 %div
@@ -350,6 +420,13 @@ define i64 @sdiv64_pow2_2(i64 %a) {
 ; RV64ZBT-NEXT:    add a0, a0, a1
 ; RV64ZBT-NEXT:    srai a0, a0, 1
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv64_pow2_2:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    srli a1, a0, 63
+; RV64CCMOV-NEXT:    add a0, a0, a1
+; RV64CCMOV-NEXT:    srai a0, a0, 1
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i64 %a, 2
   ret i64 %div
@@ -401,6 +478,14 @@ define i64 @sdiv64_pow2_negative_2(i64 %a) {
 ; RV64ZBT-NEXT:    srai a0, a0, 1
 ; RV64ZBT-NEXT:    neg a0, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv64_pow2_negative_2:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    srli a1, a0, 63
+; RV64CCMOV-NEXT:    add a0, a0, a1
+; RV64CCMOV-NEXT:    srai a0, a0, 1
+; RV64CCMOV-NEXT:    neg a0, a0
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i64 %a, -2
   ret i64 %div
@@ -446,6 +531,14 @@ define i64 @sdiv64_pow2_2048(i64 %a) {
 ; RV64ZBT-NEXT:    cmov a0, a1, a2, a0
 ; RV64ZBT-NEXT:    srai a0, a0, 11
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv64_pow2_2048:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    slti a1, a0, 0
+; RV64CCMOV-NEXT:    addi a2, a0, 2047
+; RV64CCMOV-NEXT:    ccmov a0, a1, a2, a0
+; RV64CCMOV-NEXT:    srai a0, a0, 11
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i64 %a, 2048
   ret i64 %div
@@ -501,6 +594,15 @@ define i64 @sdiv64_pow2_negative_2048(i64 %a) {
 ; RV64ZBT-NEXT:    srai a0, a0, 11
 ; RV64ZBT-NEXT:    neg a0, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv64_pow2_negative_2048:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    slti a1, a0, 0
+; RV64CCMOV-NEXT:    addi a2, a0, 2047
+; RV64CCMOV-NEXT:    ccmov a0, a1, a2, a0
+; RV64CCMOV-NEXT:    srai a0, a0, 11
+; RV64CCMOV-NEXT:    neg a0, a0
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i64 %a, -2048
   ret i64 %div
@@ -546,6 +648,14 @@ define i64 @sdiv64_pow2_4096(i64 %a) {
 ; RV64ZBT-NEXT:    add a0, a0, a1
 ; RV64ZBT-NEXT:    srai a0, a0, 12
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv64_pow2_4096:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    srai a1, a0, 63
+; RV64CCMOV-NEXT:    srli a1, a1, 52
+; RV64CCMOV-NEXT:    add a0, a0, a1
+; RV64CCMOV-NEXT:    srai a0, a0, 12
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i64 %a, 4096
   ret i64 %div
@@ -601,6 +711,15 @@ define i64 @sdiv64_pow2_negative_4096(i64 %a) {
 ; RV64ZBT-NEXT:    srai a0, a0, 12
 ; RV64ZBT-NEXT:    neg a0, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv64_pow2_negative_4096:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    srai a1, a0, 63
+; RV64CCMOV-NEXT:    srli a1, a1, 52
+; RV64CCMOV-NEXT:    add a0, a0, a1
+; RV64CCMOV-NEXT:    srai a0, a0, 12
+; RV64CCMOV-NEXT:    neg a0, a0
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i64 %a, -4096
   ret i64 %div
@@ -646,6 +765,14 @@ define i64 @sdiv64_pow2_65536(i64 %a) {
 ; RV64ZBT-NEXT:    add a0, a0, a1
 ; RV64ZBT-NEXT:    srai a0, a0, 16
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv64_pow2_65536:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    srai a1, a0, 63
+; RV64CCMOV-NEXT:    srli a1, a1, 48
+; RV64CCMOV-NEXT:    add a0, a0, a1
+; RV64CCMOV-NEXT:    srai a0, a0, 16
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i64 %a, 65536
   ret i64 %div
@@ -701,6 +828,15 @@ define i64 @sdiv64_pow2_negative_65536(i64 %a) {
 ; RV64ZBT-NEXT:    srai a0, a0, 16
 ; RV64ZBT-NEXT:    neg a0, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv64_pow2_negative_65536:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    srai a1, a0, 63
+; RV64CCMOV-NEXT:    srli a1, a1, 48
+; RV64CCMOV-NEXT:    add a0, a0, a1
+; RV64CCMOV-NEXT:    srai a0, a0, 16
+; RV64CCMOV-NEXT:    neg a0, a0
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i64 %a, -65536
   ret i64 %div
@@ -747,6 +883,14 @@ define i64 @sdiv64_pow2_8589934592(i64 %a) {
 ; RV64ZBT-NEXT:    add a0, a0, a1
 ; RV64ZBT-NEXT:    srai a0, a0, 33
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv64_pow2_8589934592:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    srai a1, a0, 63
+; RV64CCMOV-NEXT:    srli a1, a1, 31
+; RV64CCMOV-NEXT:    add a0, a0, a1
+; RV64CCMOV-NEXT:    srai a0, a0, 33
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i64 %a, 8589934592 ; 2^33
   ret i64 %div
@@ -803,6 +947,15 @@ define i64 @sdiv64_pow2_negative_8589934592(i64 %a) {
 ; RV64ZBT-NEXT:    srai a0, a0, 33
 ; RV64ZBT-NEXT:    neg a0, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: sdiv64_pow2_negative_8589934592:
+; RV64CCMOV:       # %bb.0: # %entry
+; RV64CCMOV-NEXT:    srai a1, a0, 63
+; RV64CCMOV-NEXT:    srli a1, a1, 31
+; RV64CCMOV-NEXT:    add a0, a0, a1
+; RV64CCMOV-NEXT:    srai a0, a0, 33
+; RV64CCMOV-NEXT:    neg a0, a0
+; RV64CCMOV-NEXT:    ret
 entry:
   %div = sdiv i64 %a, -8589934592 ; -2^33
   ret i64 %div

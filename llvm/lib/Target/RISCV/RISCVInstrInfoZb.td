@@ -427,10 +427,18 @@ def XPERM4 : ALU_rr<0b0010100, 0b010, "xperm4">, Sched<[]>;
 def XPERM8 : ALU_rr<0b0010100, 0b100, "xperm8">, Sched<[]>;
 } // Predicates = [HasStdExtZbpOrZbkx]
 
+let Predicates = [HasStdExtZbtOrCustomCMov] in {
+def CMOV : RVBTernaryR<0b11, 0b101, OPC_OP, "cmov", "$rd, $rs2, $rs1, $rs3">,
+           Sched<[]>;
+} // Predicates = [HasStdExtZbtOrCustomCMov]
+
+let Predicates = [HasCustomCMov] in {
+def : InstAlias<"ccmov $rd, $rs2, $rs1, $rs3",
+    (CMOV  GPR:$rd,  GPR:$rs1,  GPR:$rs2,  GPR:$rs3)>;
+} // Predicates = [HasCustomCMov]
+
 let Predicates = [HasStdExtZbt] in {
 def CMIX : RVBTernaryR<0b11, 0b001, OPC_OP, "cmix", "$rd, $rs2, $rs1, $rs3">,
-           Sched<[]>;
-def CMOV : RVBTernaryR<0b11, 0b101, OPC_OP, "cmov", "$rd, $rs2, $rs1, $rs3">,
            Sched<[]>;
 def FSL  : RVBTernaryR<0b10, 0b001, OPC_OP, "fsl", "$rd, $rs1, $rs3, $rs2">,
            Sched<[]>;
@@ -908,10 +916,7 @@ let Predicates = [HasStdExtZbp, IsRV64] in {
 def : Pat<(i64 (riscv_grev GPR:$rs1, 56)), (REV8_RV64 GPR:$rs1)>;
 } // Predicates = [HasStdExtZbp, IsRV64]
 
-let Predicates = [HasStdExtZbt] in {
-def : Pat<(or (and (not GPR:$rs2), GPR:$rs3), (and GPR:$rs2, GPR:$rs1)),
-          (CMIX GPR:$rs1, GPR:$rs2, GPR:$rs3)>;
-
+let Predicates = [HasStdExtZbtOrCustomCMov] in {
 def : Pat<(select (XLenVT (setne GPR:$rs2, 0)), GPR:$rs1, GPR:$rs3),
           (CMOV GPR:$rs1, GPR:$rs2, GPR:$rs3)>;
 def : Pat<(select (XLenVT (seteq GPR:$rs2, 0)), GPR:$rs3, GPR:$rs1),
@@ -934,6 +939,11 @@ def : Pat<(select (XLenVT (setle GPR:$y, GPR:$x)), GPR:$rs3, GPR:$rs1),
           (CMOV GPR:$rs1, (SLT GPR:$x, GPR:$y), GPR:$rs3)>;
 def : Pat<(select GPR:$rs2, GPR:$rs1, GPR:$rs3),
           (CMOV GPR:$rs1, GPR:$rs2, GPR:$rs3)>;
+} // Predicates = [HasStdExtZbtOrCustomCMov]
+
+let Predicates = [HasStdExtZbt] in {
+def : Pat<(or (and (not GPR:$rs2), GPR:$rs3), (and GPR:$rs2, GPR:$rs1)),
+          (CMIX GPR:$rs1, GPR:$rs2, GPR:$rs3)>;
 } // Predicates = [HasStdExtZbt]
 
 let Predicates = [HasStdExtZbt] in {

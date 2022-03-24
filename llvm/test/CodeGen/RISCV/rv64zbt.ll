@@ -3,6 +3,8 @@
 ; RUN:   | FileCheck %s -check-prefix=RV64I
 ; RUN: llc -mtriple=riscv64 -mattr=+experimental-zbt -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s -check-prefix=RV64ZBT
+; RUN: llc -mtriple=riscv64 -mattr=+ccmov -verify-machineinstrs < %s \
+; RUN:   | FileCheck %s -check-prefix=RV64CCMOV
 
 define signext i32 @cmix_i32(i32 signext %a, i32 signext %b, i32 signext %c) nounwind {
 ; RV64I-LABEL: cmix_i32:
@@ -17,6 +19,14 @@ define signext i32 @cmix_i32(i32 signext %a, i32 signext %b, i32 signext %c) nou
 ; RV64ZBT:       # %bb.0:
 ; RV64ZBT-NEXT:    cmix a0, a1, a0, a2
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: cmix_i32:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    and a0, a1, a0
+; RV64CCMOV-NEXT:    not a1, a1
+; RV64CCMOV-NEXT:    and a1, a1, a2
+; RV64CCMOV-NEXT:    or a0, a1, a0
+; RV64CCMOV-NEXT:    ret
   %and = and i32 %b, %a
   %neg = xor i32 %b, -1
   %and1 = and i32 %neg, %c
@@ -37,6 +47,14 @@ define i64 @cmix_i64(i64 %a, i64 %b, i64 %c) nounwind {
 ; RV64ZBT:       # %bb.0:
 ; RV64ZBT-NEXT:    cmix a0, a1, a0, a2
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: cmix_i64:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    and a0, a1, a0
+; RV64CCMOV-NEXT:    not a1, a1
+; RV64CCMOV-NEXT:    and a1, a1, a2
+; RV64CCMOV-NEXT:    or a0, a1, a0
+; RV64CCMOV-NEXT:    ret
   %and = and i64 %b, %a
   %neg = xor i64 %b, -1
   %and1 = and i64 %neg, %c
@@ -58,6 +76,11 @@ define signext i32 @cmov_i32(i32 signext %a, i32 signext %b, i32 signext %c) nou
 ; RV64ZBT:       # %bb.0:
 ; RV64ZBT-NEXT:    cmov a0, a1, a0, a2
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: cmov_i32:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    ccmov a0, a1, a0, a2
+; RV64CCMOV-NEXT:    ret
   %tobool.not = icmp eq i32 %b, 0
   %cond = select i1 %tobool.not, i32 %c, i32 %a
   ret i32 %cond
@@ -77,6 +100,12 @@ define signext i32 @cmov_sle_i32(i32 signext %a, i32 signext %b, i32 signext %c,
 ; RV64ZBT-NEXT:    slt a1, a2, a1
 ; RV64ZBT-NEXT:    cmov a0, a1, a3, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: cmov_sle_i32:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    slt a1, a2, a1
+; RV64CCMOV-NEXT:    ccmov a0, a1, a3, a0
+; RV64CCMOV-NEXT:    ret
   %tobool = icmp sle i32 %b, %c
   %cond = select i1 %tobool, i32 %a, i32 %d
   ret i32 %cond
@@ -96,6 +125,12 @@ define signext i32 @cmov_sge_i32(i32 signext %a, i32 signext %b, i32 signext %c,
 ; RV64ZBT-NEXT:    slt a1, a1, a2
 ; RV64ZBT-NEXT:    cmov a0, a1, a3, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: cmov_sge_i32:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    slt a1, a1, a2
+; RV64CCMOV-NEXT:    ccmov a0, a1, a3, a0
+; RV64CCMOV-NEXT:    ret
   %tobool = icmp sge i32 %b, %c
   %cond = select i1 %tobool, i32 %a, i32 %d
   ret i32 %cond
@@ -115,6 +150,12 @@ define signext i32 @cmov_ule_i32(i32 signext %a, i32 signext %b, i32 signext %c,
 ; RV64ZBT-NEXT:    sltu a1, a2, a1
 ; RV64ZBT-NEXT:    cmov a0, a1, a3, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: cmov_ule_i32:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    sltu a1, a2, a1
+; RV64CCMOV-NEXT:    ccmov a0, a1, a3, a0
+; RV64CCMOV-NEXT:    ret
   %tobool = icmp ule i32 %b, %c
   %cond = select i1 %tobool, i32 %a, i32 %d
   ret i32 %cond
@@ -134,6 +175,12 @@ define signext i32 @cmov_uge_i32(i32 signext %a, i32 signext %b, i32 signext %c,
 ; RV64ZBT-NEXT:    sltu a1, a1, a2
 ; RV64ZBT-NEXT:    cmov a0, a1, a3, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: cmov_uge_i32:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    sltu a1, a1, a2
+; RV64CCMOV-NEXT:    ccmov a0, a1, a3, a0
+; RV64CCMOV-NEXT:    ret
   %tobool = icmp uge i32 %b, %c
   %cond = select i1 %tobool, i32 %a, i32 %d
   ret i32 %cond
@@ -153,6 +200,11 @@ define i64 @cmov_i64(i64 %a, i64 %b, i64 %c) nounwind {
 ; RV64ZBT:       # %bb.0:
 ; RV64ZBT-NEXT:    cmov a0, a1, a0, a2
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: cmov_i64:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    ccmov a0, a1, a0, a2
+; RV64CCMOV-NEXT:    ret
   %tobool.not = icmp eq i64 %b, 0
   %cond = select i1 %tobool.not, i64 %c, i64 %a
   ret i64 %cond
@@ -172,6 +224,12 @@ define i64 @cmov_sle_i64(i64 %a, i64 %b, i64 %c, i64 %d) nounwind {
 ; RV64ZBT-NEXT:    slt a1, a2, a1
 ; RV64ZBT-NEXT:    cmov a0, a1, a3, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: cmov_sle_i64:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    slt a1, a2, a1
+; RV64CCMOV-NEXT:    ccmov a0, a1, a3, a0
+; RV64CCMOV-NEXT:    ret
   %tobool = icmp sle i64 %b, %c
   %cond = select i1 %tobool, i64 %a, i64 %d
   ret i64 %cond
@@ -191,6 +249,12 @@ define i64 @cmov_sge_i64(i64 %a, i64 %b, i64 %c, i64 %d) nounwind {
 ; RV64ZBT-NEXT:    slt a1, a1, a2
 ; RV64ZBT-NEXT:    cmov a0, a1, a3, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: cmov_sge_i64:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    slt a1, a1, a2
+; RV64CCMOV-NEXT:    ccmov a0, a1, a3, a0
+; RV64CCMOV-NEXT:    ret
   %tobool = icmp sge i64 %b, %c
   %cond = select i1 %tobool, i64 %a, i64 %d
   ret i64 %cond
@@ -210,6 +274,12 @@ define i64 @cmov_ule_i64(i64 %a, i64 %b, i64 %c, i64 %d) nounwind {
 ; RV64ZBT-NEXT:    sltu a1, a2, a1
 ; RV64ZBT-NEXT:    cmov a0, a1, a3, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: cmov_ule_i64:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    sltu a1, a2, a1
+; RV64CCMOV-NEXT:    ccmov a0, a1, a3, a0
+; RV64CCMOV-NEXT:    ret
   %tobool = icmp ule i64 %b, %c
   %cond = select i1 %tobool, i64 %a, i64 %d
   ret i64 %cond
@@ -229,6 +299,12 @@ define i64 @cmov_uge_i64(i64 %a, i64 %b, i64 %c, i64 %d) nounwind {
 ; RV64ZBT-NEXT:    sltu a1, a1, a2
 ; RV64ZBT-NEXT:    cmov a0, a1, a3, a0
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: cmov_uge_i64:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    sltu a1, a1, a2
+; RV64CCMOV-NEXT:    ccmov a0, a1, a3, a0
+; RV64CCMOV-NEXT:    ret
   %tobool = icmp uge i64 %b, %c
   %cond = select i1 %tobool, i64 %a, i64 %d
   ret i64 %cond
@@ -253,6 +329,17 @@ define signext i32 @fshl_i32(i32 signext %a, i32 signext %b, i32 signext %c) nou
 ; RV64ZBT-NEXT:    andi a2, a2, 31
 ; RV64ZBT-NEXT:    fslw a0, a0, a1, a2
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: fshl_i32:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    slli a0, a0, 32
+; RV64CCMOV-NEXT:    slli a1, a1, 32
+; RV64CCMOV-NEXT:    srli a1, a1, 32
+; RV64CCMOV-NEXT:    or a0, a0, a1
+; RV64CCMOV-NEXT:    andi a1, a2, 31
+; RV64CCMOV-NEXT:    sll a0, a0, a1
+; RV64CCMOV-NEXT:    srai a0, a0, 32
+; RV64CCMOV-NEXT:    ret
   %1 = tail call i32 @llvm.fshl.i32(i32 %a, i32 %b, i32 %c)
   ret i32 %1
 }
@@ -277,6 +364,18 @@ define void @fshl_i32_nosext(i32 signext %a, i32 signext %b, i32 signext %c, i32
 ; RV64ZBT-NEXT:    fslw a0, a0, a1, a2
 ; RV64ZBT-NEXT:    sw a0, 0(a3)
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: fshl_i32_nosext:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    slli a0, a0, 32
+; RV64CCMOV-NEXT:    slli a1, a1, 32
+; RV64CCMOV-NEXT:    srli a1, a1, 32
+; RV64CCMOV-NEXT:    or a0, a0, a1
+; RV64CCMOV-NEXT:    andi a1, a2, 31
+; RV64CCMOV-NEXT:    sll a0, a0, a1
+; RV64CCMOV-NEXT:    srli a0, a0, 32
+; RV64CCMOV-NEXT:    sw a0, 0(a3)
+; RV64CCMOV-NEXT:    ret
   %1 = tail call i32 @llvm.fshl.i32(i32 %a, i32 %b, i32 %c)
   store i32 %1, i32* %x
   ret void
@@ -299,6 +398,15 @@ define i64 @fshl_i64(i64 %a, i64 %b, i64 %c) nounwind {
 ; RV64ZBT-NEXT:    andi a2, a2, 63
 ; RV64ZBT-NEXT:    fsl a0, a0, a1, a2
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: fshl_i64:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    sll a0, a0, a2
+; RV64CCMOV-NEXT:    not a2, a2
+; RV64CCMOV-NEXT:    srli a1, a1, 1
+; RV64CCMOV-NEXT:    srl a1, a1, a2
+; RV64CCMOV-NEXT:    or a0, a0, a1
+; RV64CCMOV-NEXT:    ret
   %1 = tail call i64 @llvm.fshl.i64(i64 %a, i64 %b, i64 %c)
   ret i64 %1
 }
@@ -322,6 +430,17 @@ define signext i32 @fshr_i32(i32 signext %a, i32 signext %b, i32 signext %c) nou
 ; RV64ZBT-NEXT:    andi a2, a2, 31
 ; RV64ZBT-NEXT:    fsrw a0, a1, a0, a2
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: fshr_i32:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    slli a0, a0, 32
+; RV64CCMOV-NEXT:    slli a1, a1, 32
+; RV64CCMOV-NEXT:    srli a1, a1, 32
+; RV64CCMOV-NEXT:    or a0, a0, a1
+; RV64CCMOV-NEXT:    andi a1, a2, 31
+; RV64CCMOV-NEXT:    srl a0, a0, a1
+; RV64CCMOV-NEXT:    sext.w a0, a0
+; RV64CCMOV-NEXT:    ret
   %1 = tail call i32 @llvm.fshr.i32(i32 %a, i32 %b, i32 %c)
   ret i32 %1
 }
@@ -345,6 +464,17 @@ define void @fshr_i32_nosext(i32 signext %a, i32 signext %b, i32 signext %c, i32
 ; RV64ZBT-NEXT:    fsrw a0, a1, a0, a2
 ; RV64ZBT-NEXT:    sw a0, 0(a3)
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: fshr_i32_nosext:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    slli a0, a0, 32
+; RV64CCMOV-NEXT:    slli a1, a1, 32
+; RV64CCMOV-NEXT:    srli a1, a1, 32
+; RV64CCMOV-NEXT:    or a0, a0, a1
+; RV64CCMOV-NEXT:    andi a1, a2, 31
+; RV64CCMOV-NEXT:    srl a0, a0, a1
+; RV64CCMOV-NEXT:    sw a0, 0(a3)
+; RV64CCMOV-NEXT:    ret
   %1 = tail call i32 @llvm.fshr.i32(i32 %a, i32 %b, i32 %c)
   store i32 %1, i32* %x
   ret void
@@ -367,6 +497,15 @@ define i64 @fshr_i64(i64 %a, i64 %b, i64 %c) nounwind {
 ; RV64ZBT-NEXT:    andi a2, a2, 63
 ; RV64ZBT-NEXT:    fsr a0, a1, a0, a2
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: fshr_i64:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    srl a1, a1, a2
+; RV64CCMOV-NEXT:    not a2, a2
+; RV64CCMOV-NEXT:    slli a0, a0, 1
+; RV64CCMOV-NEXT:    sll a0, a0, a2
+; RV64CCMOV-NEXT:    or a0, a0, a1
+; RV64CCMOV-NEXT:    ret
   %1 = tail call i64 @llvm.fshr.i64(i64 %a, i64 %b, i64 %c)
   ret i64 %1
 }
@@ -384,6 +523,14 @@ define signext i32 @fshri_i32(i32 signext %a, i32 signext %b) nounwind {
 ; RV64ZBT:       # %bb.0:
 ; RV64ZBT-NEXT:    fsriw a0, a1, a0, 5
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: fshri_i32:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    srliw a1, a1, 5
+; RV64CCMOV-NEXT:    slli a0, a0, 27
+; RV64CCMOV-NEXT:    or a0, a0, a1
+; RV64CCMOV-NEXT:    sext.w a0, a0
+; RV64CCMOV-NEXT:    ret
   %1 = tail call i32 @llvm.fshr.i32(i32 %a, i32 %b, i32 5)
   ret i32 %1
 }
@@ -403,6 +550,14 @@ define void @fshri_i32_nosext(i32 signext %a, i32 signext %b, i32* %x) nounwind 
 ; RV64ZBT-NEXT:    fsriw a0, a1, a0, 5
 ; RV64ZBT-NEXT:    sw a0, 0(a2)
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: fshri_i32_nosext:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    srliw a1, a1, 5
+; RV64CCMOV-NEXT:    slli a0, a0, 27
+; RV64CCMOV-NEXT:    or a0, a0, a1
+; RV64CCMOV-NEXT:    sw a0, 0(a2)
+; RV64CCMOV-NEXT:    ret
   %1 = tail call i32 @llvm.fshr.i32(i32 %a, i32 %b, i32 5)
   store i32 %1, i32* %x
   ret void
@@ -420,6 +575,13 @@ define i64 @fshri_i64(i64 %a, i64 %b) nounwind {
 ; RV64ZBT:       # %bb.0:
 ; RV64ZBT-NEXT:    fsri a0, a1, a0, 5
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: fshri_i64:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    srli a1, a1, 5
+; RV64CCMOV-NEXT:    slli a0, a0, 59
+; RV64CCMOV-NEXT:    or a0, a0, a1
+; RV64CCMOV-NEXT:    ret
   %1 = tail call i64 @llvm.fshr.i64(i64 %a, i64 %b, i64 5)
   ret i64 %1
 }
@@ -437,6 +599,14 @@ define signext i32 @fshli_i32(i32 signext %a, i32 signext %b) nounwind {
 ; RV64ZBT:       # %bb.0:
 ; RV64ZBT-NEXT:    fsriw a0, a1, a0, 27
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: fshli_i32:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    srliw a1, a1, 27
+; RV64CCMOV-NEXT:    slli a0, a0, 5
+; RV64CCMOV-NEXT:    or a0, a0, a1
+; RV64CCMOV-NEXT:    sext.w a0, a0
+; RV64CCMOV-NEXT:    ret
   %1 = tail call i32 @llvm.fshl.i32(i32 %a, i32 %b, i32 5)
   ret i32 %1
 }
@@ -456,6 +626,14 @@ define void @fshli_i32_nosext(i32 signext %a, i32 signext %b, i32* %x) nounwind 
 ; RV64ZBT-NEXT:    fsriw a0, a1, a0, 27
 ; RV64ZBT-NEXT:    sw a0, 0(a2)
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: fshli_i32_nosext:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    srliw a1, a1, 27
+; RV64CCMOV-NEXT:    slli a0, a0, 5
+; RV64CCMOV-NEXT:    or a0, a0, a1
+; RV64CCMOV-NEXT:    sw a0, 0(a2)
+; RV64CCMOV-NEXT:    ret
   %1 = tail call i32 @llvm.fshl.i32(i32 %a, i32 %b, i32 5)
   store i32 %1, i32* %x
   ret void
@@ -473,6 +651,13 @@ define i64 @fshli_i64(i64 %a, i64 %b) nounwind {
 ; RV64ZBT:       # %bb.0:
 ; RV64ZBT-NEXT:    fsri a0, a1, a0, 59
 ; RV64ZBT-NEXT:    ret
+;
+; RV64CCMOV-LABEL: fshli_i64:
+; RV64CCMOV:       # %bb.0:
+; RV64CCMOV-NEXT:    srli a1, a1, 59
+; RV64CCMOV-NEXT:    slli a0, a0, 5
+; RV64CCMOV-NEXT:    or a0, a0, a1
+; RV64CCMOV-NEXT:    ret
   %1 = tail call i64 @llvm.fshl.i64(i64 %a, i64 %b, i64 5)
   ret i64 %1
 }

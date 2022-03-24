@@ -100,6 +100,7 @@ private:
   bool HasStdExtZks = false;
   bool HasStdExtZkt = false;
   bool HasStdExtZk = false;
+  bool HasCustomCMov = false;
   bool HasRV64 = false;
   bool IsRV32E = false;
   bool EnableLinkerRelax = false;
@@ -192,6 +193,7 @@ public:
   bool enableLinkerRelax() const { return EnableLinkerRelax; }
   bool enableRVCHintInstrs() const { return EnableRVCHintInstrs; }
   bool enableSaveRestore() const { return EnableSaveRestore; }
+  bool hasCustomCMov() const { return HasCustomCMov; }
   MVT getXLenVT() const { return XLenVT; }
   unsigned getXLen() const { return XLen; }
   unsigned getFLen() const {
