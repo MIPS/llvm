@@ -414,6 +414,10 @@ def ixlenimm_li_restricted : Operand<XLenVT> {
 
 // Standalone (codegen-only) immleaf patterns.
 
+// A 12-bit signed immediate plus one where the imm range will be -2047~2048.
+def simm12_plus1 : ImmLeaf<XLenVT,
+  [{return (isInt<12>(Imm) && Imm != -2048) || Imm == 2048;}]>;
+
 // A 6-bit constant greater than 32.
 def uimm6gt32 : ImmLeaf<XLenVT, [{
   return isUInt<6>(Imm) && Imm > 32;
@@ -815,6 +819,13 @@ def SRAW  : ALUW_rr<0b0100000, 0b101, "sraw">,
             Sched<[WriteShiftReg32, ReadShiftReg32, ReadShiftReg32]>;
 } // IsSignExtendingOpW = 1
 } // Predicates = [IsRV64]
+
+let Predicates = [HasCCMov], hasSideEffects = 0, mayLoad = 0, mayStore = 0 in {
+def CCMOV : RVInstR4<0b11, 0b101, OPC_CUSTOM_0, (outs GPR:$rd),
+                    (ins GPR:$rs1, GPR:$rs2, GPR:$rs3),
+                    "ccmov", "$rd, $rs2, $rs1, $rs3">,
+           Sched<[]>;
+} // Predicates = [HasCCMov]
 
 //===----------------------------------------------------------------------===//
 // Privileged instructions
@@ -1927,6 +1938,32 @@ def : Pat<(binop_allwusers<add> GPR:$rs1, (AddiPair:$rs2)),
           (ADDIW (ADDIW GPR:$rs1, (AddiPairImmLarge AddiPair:$rs2)),
                  (AddiPairImmSmall AddiPair:$rs2))>;
 }
+
+/// Select to ccmov patterns
+let Predicates = [HasCCMov] in {
+def : Pat<(select (XLenVT (setne (XLenVT GPR:$rs2), (XLenVT 0))), (XLenVT GPR:$rs1), (XLenVT GPR:$rs3)),
+          (CCMOV GPR:$rs1, GPR:$rs2, GPR:$rs3)>;
+def : Pat<(select (XLenVT (seteq (XLenVT GPR:$rs2), (XLenVT 0))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, GPR:$rs2, GPR:$rs3)>;
+def : Pat<(select (XLenVT (setne (XLenVT GPR:$x), (XLenVT simm12_plus1:$y))), (XLenVT GPR:$rs1), (XLenVT GPR:$rs3)),
+          (CCMOV GPR:$rs1, (ADDI GPR:$x, (NegImm simm12_plus1:$y)), GPR:$rs3)>;
+def : Pat<(select (XLenVT (seteq (XLenVT GPR:$x), (XLenVT simm12_plus1:$y))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, (ADDI GPR:$x, (NegImm simm12_plus1:$y)), GPR:$rs3)>;
+def : Pat<(select (XLenVT (setne (XLenVT GPR:$x), (XLenVT GPR:$y))), (XLenVT GPR:$rs1), (XLenVT GPR:$rs3)),
+          (CCMOV GPR:$rs1, (XOR GPR:$x, GPR:$y), GPR:$rs3)>;
+def : Pat<(select (XLenVT (seteq (XLenVT GPR:$x), (XLenVT GPR:$y))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, (XOR GPR:$x, GPR:$y), GPR:$rs3)>;
+def : Pat<(select (XLenVT (setuge (XLenVT GPR:$x), (XLenVT GPR:$y))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, (SLTU GPR:$x, GPR:$y), GPR:$rs3)>;
+def : Pat<(select (XLenVT (setule (XLenVT GPR:$y), (XLenVT GPR:$x))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, (SLTU GPR:$x, GPR:$y), GPR:$rs3)>;
+def : Pat<(select (XLenVT (setge (XLenVT GPR:$x), (XLenVT GPR:$y))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, (SLT GPR:$x, GPR:$y), GPR:$rs3)>;
+def : Pat<(select (XLenVT (setle (XLenVT GPR:$y), (XLenVT GPR:$x))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, (SLT GPR:$x, GPR:$y), GPR:$rs3)>;
+def : Pat<(select (XLenVT GPR:$rs2), (XLenVT GPR:$rs1), (XLenVT GPR:$rs3)),
+          (CCMOV GPR:$rs1, GPR:$rs2, GPR:$rs3)>;
+} // Predicates = [HasCCMov]
 
 //===----------------------------------------------------------------------===//
 // Standard extensions
