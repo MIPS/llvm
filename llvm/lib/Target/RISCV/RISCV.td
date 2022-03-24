@@ -20,6 +20,14 @@ def Proci8500 : SubtargetFeature<"i8500", "RISCVProcFamily", "Others",
 def Procp8700 : SubtargetFeature<"p8700", "RISCVProcFamily", "Others",
                                    "p8700 processor">;
 
+def FeatureCCMov : SubtargetFeature<"ccmov", "HasCCMov",
+                                   "true", "Using CCMov",
+                                   [Feature64Bit]>;
+
+def HasCCMov : Predicate<"Subtarget->hasCCMov()">,
+                        AssemblerPredicate<(all_of FeatureCCMov),
+                        "'ccmov' instruction">;
+
 //===----------------------------------------------------------------------===//
 // Named operands for CSR instructions.
 //===----------------------------------------------------------------------===//
