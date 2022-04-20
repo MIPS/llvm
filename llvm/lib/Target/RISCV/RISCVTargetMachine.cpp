@@ -26,6 +26,7 @@
 #include "llvm/CodeGen/GlobalISel/RegBankSelect.h"
 #include "llvm/CodeGen/MIRParser/MIParser.h"
 #include "llvm/CodeGen/MIRYamlMapping.h"
+#include "llvm/CodeGen/MachineScheduler.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
@@ -90,6 +91,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeRISCVTarget() {
   initializeRISCVInitUndefPass(*PR);
   initializeRISCVMoveMergePass(*PR);
   initializeRISCVPushPopOptPass(*PR);
+  initializeRISCVLoadStoreOptPass(*PR);
 }
 
 static StringRef computeDataLayout(const Triple &TT) {
@@ -243,6 +245,12 @@ public:
     if (ST.hasMacroFusion()) {
       ScheduleDAGMILive *DAG = createGenericSchedLive(C);
       DAG->addMutation(createRISCVMacroFusionDAGMutation());
+
+      const RISCVSubtarget &ST = C->MF->getSubtarget<RISCVSubtarget>();
+      if (ST.useLoadStorePairs()) {
+        DAG->addMutation(createLoadClusterDAGMutation(DAG->TII, DAG->TRI));
+        DAG->addMutation(createStoreClusterDAGMutation(DAG->TII, DAG->TRI));
+      }
       return DAG;
     }
     return nullptr;
@@ -338,6 +346,9 @@ bool RISCVPassConfig::addGlobalInstructionSelect() {
 void RISCVPassConfig::addPreSched2() {
   // Emit KCFI checks for indirect calls.
   addPass(createKCFIPass());
+  if (TM->getOptLevel() != CodeGenOpt::None) {
+      addPass(createRISCVLoadStoreOptPass());
+  }
 }
 
 void RISCVPassConfig::addPreEmitPass() {
@@ -351,6 +362,10 @@ void RISCVPassConfig::addPreEmitPass() {
   // outlined functions are removed erroneously.
   if (TM->getOptLevel() >= CodeGenOpt::Default && EnableRISCVCopyPropagation)
     addPass(createMachineCopyPropagationPass(true));
+  // LoadStoreOptimizer creates bundles for load-store bonding.
+  addPass(createUnpackMachineBundles([](const MachineFunction &MF) {
+    return MF.getSubtarget<RISCVSubtarget>().useLoadStorePairs();
+  }));
 }
 
 void RISCVPassConfig::addPreEmitPass2() {

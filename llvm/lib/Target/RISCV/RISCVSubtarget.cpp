@@ -48,6 +48,11 @@ static cl::opt<unsigned> RISCVMaxBuildIntsCost(
     cl::desc("The maximum cost used for building integers."), cl::init(0),
     cl::Hidden);
 
+static cl::opt<bool> UseLoadStorePairsOpt(
+    "riscv-load-store-pairs",
+    cl::desc("RISCV: Optimize for load-store bonding"),
+    cl::init(true), cl::Hidden);
+
 void RISCVSubtarget::anchor() {}
 
 RISCVSubtarget &
@@ -174,4 +179,8 @@ bool RISCVSubtarget::enableSubRegLiveness() const {
 void RISCVSubtarget::getPostRAMutations(
     std::vector<std::unique_ptr<ScheduleDAGMutation>> &Mutations) const {
   Mutations.push_back(createRISCVMacroFusionDAGMutation());
+}
+
+bool RISCVSubtarget::useLoadStorePairs() const {
+  return UseLoadStorePairsOpt && HasLoadStorePairs;
 }

@@ -128,6 +128,7 @@ public:
            HasStdExtZvfbfwma;
   }
   bool is64Bit() const { return IsRV64; }
+  bool useLoadStorePairs() const;
   MVT getXLenVT() const { return XLenVT; }
   unsigned getXLen() const { return XLen; }
   unsigned getFLen() const {

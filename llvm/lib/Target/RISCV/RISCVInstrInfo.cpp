@@ -1887,6 +1887,106 @@ bool RISCVInstrInfo::verifyInstruction(const MachineInstr &MI,
   return true;
 }
 
+bool RISCVInstrInfo::isPairableLdStInstOpc(unsigned Opc) {
+  switch (Opc) {
+  default:
+    return false;
+  case RISCV::SH:
+  case RISCV::LH:
+  case RISCV::LHU:
+  case RISCV::SW:
+  case RISCV::FSW:
+  case RISCV::LW:
+  case RISCV::FLW:
+  case RISCV::SD:
+  case RISCV::FSD:
+  case RISCV::LD:
+  case RISCV::FLD:
+    return true;
+  }
+}
+
+bool RISCVInstrInfo::isLdStSafeToPair(const MachineInstr &LdSt,
+                                      const TargetRegisterInfo *TRI) {
+  // If this is a volatile load/store, don't mess with it.
+  if (LdSt.hasOrderedMemoryRef() || LdSt.getNumExplicitOperands() != 3)
+    return false;
+
+  if (LdSt.getOperand(1).isFI())
+    return true;
+
+  assert(LdSt.getOperand(1).isReg() && "Expected a reg operand.");
+  // Can't cluster if the instruction modifies the base register
+  // or it is update form. e.g. ld x5,8(x5)
+  if (LdSt.modifiesRegister(LdSt.getOperand(1).getReg(), TRI))
+    return false;
+
+  return true;
+}
+
+bool RISCVInstrInfo::shouldClusterMemOps(
+    ArrayRef<const MachineOperand *> BaseOps1,
+    ArrayRef<const MachineOperand *> BaseOps2, unsigned NumLoads,
+    unsigned NumBytes) const {
+  assert(BaseOps1.size() == 1 && BaseOps2.size() == 1);
+  const MachineOperand &BaseOp1 = *BaseOps1.front();
+  const MachineOperand &BaseOp2 = *BaseOps2.front();
+  assert((BaseOp1.isReg() || BaseOp1.isFI()) &&
+         "Only base registers and frame indices are supported.");
+  // Only cluster up to a single pair.
+  if (NumLoads > 2)
+    return false;
+
+  // Cluster the load/store only when they have the same base
+  // register or FI.
+  if ((BaseOp1.isReg() != BaseOp2.isReg()) ||
+      (BaseOp1.isReg() && BaseOp1.getReg() != BaseOp2.getReg()) ||
+      (BaseOp1.isFI() && BaseOp1.getIndex() != BaseOp2.getIndex()))
+    return false;
+
+  const MachineInstr &FirstLdSt = *BaseOp1.getParent();
+  const MachineInstr &SecondLdSt = *BaseOp2.getParent();
+  unsigned FirstOpc = FirstLdSt.getOpcode();
+  unsigned SecondOpc = SecondLdSt.getOpcode();
+  const TargetRegisterInfo *TRI = STI.getRegisterInfo();
+
+  if ((FirstOpc != SecondOpc) ||
+      !isPairableLdStInstOpc(FirstOpc) ||
+      !isPairableLdStInstOpc(SecondOpc))
+    return false;
+
+  // Can't cluster load/store that have ordered or volatile memory reference.
+  if (!isLdStSafeToPair(FirstLdSt, TRI) ||
+      !isLdStSafeToPair(SecondLdSt, TRI))
+    return false;
+
+  int64_t Offset1 = 0, Offset2 = 0;
+  unsigned Width1 = 0, Width2 = 0;
+  const MachineOperand *Base1 = nullptr, *Base2 = nullptr;
+  if (!getMemOperandWithOffsetWidth(FirstLdSt, Base1, Offset1, Width1, TRI) ||
+      !getMemOperandWithOffsetWidth(SecondLdSt, Base2, Offset2, Width2, TRI) ||
+      Width1 != Width2)
+    return false;
+
+  assert(Base1 == &BaseOp1 && Base2 == &BaseOp2 &&
+         "getMemOperandWithOffsetWidth return incorrect base op");
+  // The caller should already have ordered FirstMemOp/SecondMemOp by offset.
+  assert(Offset1 <= Offset2 && "Caller should have ordered offsets.");
+  return Offset1 + Width1 == Offset2;
+}
+
+bool RISCVInstrInfo::getMemOperandsWithOffsetWidth(
+    const MachineInstr &LdSt, SmallVectorImpl<const MachineOperand *> &BaseOps,
+    int64_t &Offset, bool &OffsetIsScalable, unsigned &Width,
+    const TargetRegisterInfo *TRI) const {
+  const MachineOperand *BaseOp;
+  OffsetIsScalable = false;
+  if (!getMemOperandWithOffsetWidth(LdSt, BaseOp, Offset, Width, TRI))
+    return false;
+  BaseOps.push_back(BaseOp);
+  return true;
+}
+
 // Return true if get the base operand, byte offset of an instruction and the
 // memory width. Width is the size of memory that is being loaded/stored.
 bool RISCVInstrInfo::getMemOperandWithOffsetWidth(
