@@ -110,6 +110,15 @@ public:
   bool verifyInstruction(const MachineInstr &MI,
                          StringRef &ErrInfo) const override;
 
+  bool shouldClusterMemOps(ArrayRef<const MachineOperand *> BaseOps1,
+                           ArrayRef<const MachineOperand *> BaseOps2,
+                           unsigned NumLoads, unsigned NumBytes) const override;
+
+  bool getMemOperandsWithOffsetWidth(
+      const MachineInstr &MI, SmallVectorImpl<const MachineOperand *> &BaseOps,
+      int64_t &Offset, bool &OffsetIsScalable, unsigned &Width,
+      const TargetRegisterInfo *TRI) const override;
+
   bool getMemOperandWithOffsetWidth(const MachineInstr &LdSt,
                                     const MachineOperand *&BaseOp,
                                     int64_t &Offset, unsigned &Width,
@@ -173,6 +182,11 @@ public:
   // expect to see a FrameIndex operand. When CheckFIs is true, the instruction
   // must contain at least one FrameIndex operand.
   bool isRVVSpill(const MachineInstr &MI, bool CheckFIs) const;
+
+  /// Return true if pairing the given load or store may be paired with another.
+  static bool isPairableLdStInstOpc(unsigned Opc);
+
+  static bool isLdStSafeToPair(const MachineInstr &LdSt, const TargetRegisterInfo *TRI);
 
   Optional<std::pair<unsigned, unsigned>>
   isRVVSpillForZvlsseg(unsigned Opcode) const;

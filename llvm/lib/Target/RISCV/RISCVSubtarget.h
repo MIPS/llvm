@@ -106,6 +106,8 @@ private:
   bool EnableLinkerRelax = false;
   bool EnableRVCHintInstrs = true;
   bool EnableSaveRestore = false;
+  // Optimize for hardware load-store bonding
+  bool UseLoadStorePairs = false;
   unsigned XLen = 32;
   ExtZvl ZvlLen = ExtZvl::NotSet;
   MVT XLenVT = MVT::i32;
@@ -149,6 +151,7 @@ public:
     return &TSInfo;
   }
   bool enableMachineScheduler() const override { return true; }
+  //bool enablePostRAMachineScheduler() const override { return true; }
 
   /// Returns RISCV processor family.
   /// Avoid this function! CPU specifics should be kept local to this class
@@ -194,6 +197,7 @@ public:
   bool enableRVCHintInstrs() const { return EnableRVCHintInstrs; }
   bool enableSaveRestore() const { return EnableSaveRestore; }
   bool hasCustomCMov() const { return HasCustomCMov; }
+  bool useLoadStorePairs() const;
   MVT getXLenVT() const { return XLenVT; }
   unsigned getXLen() const { return XLen; }
   unsigned getFLen() const {

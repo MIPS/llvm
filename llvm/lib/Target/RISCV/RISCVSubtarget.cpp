@@ -61,6 +61,11 @@ static cl::opt<unsigned> RISCVMaxBuildIntsCost(
     cl::desc("The maximum cost used for building integers."), cl::init(0),
     cl::Hidden);
 
+static cl::opt<bool> UseLoadStorePairsOpt(
+    "riscv-load-store-pairs",
+    cl::desc("RISCV: Optimize for load-store bonding"),
+    cl::init(true), cl::Hidden);
+
 void RISCVSubtarget::anchor() {}
 
 RISCVSubtarget &
@@ -208,4 +213,8 @@ unsigned RISCVSubtarget::getMaxELENForFixedLengthVectors() const {
 
 bool RISCVSubtarget::useRVVForFixedLengthVectors() const {
   return hasVInstructions() && getMinRVVVectorSizeInBits() != 0;
+}
+
+bool RISCVSubtarget::useLoadStorePairs() const {
+  return UseLoadStorePairsOpt && UseLoadStorePairs;
 }
