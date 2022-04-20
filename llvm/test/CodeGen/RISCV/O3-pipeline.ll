@@ -170,6 +170,7 @@
 ; CHECK-NEXT:       Post-RA pseudo instruction expansion pass
 ; CHECK-NEXT:       RISC-V post-regalloc pseudo instruction expansion pass
 ; CHECK-NEXT:       Insert KCFI indirect call checks
+; CHECK-NEXT:       RISCV Load / Store Optimizer
 ; CHECK-NEXT:       MachineDominator Tree Construction
 ; CHECK-NEXT:       Machine Natural Loop Construction
 ; CHECK-NEXT:       PostRA Machine Instruction Scheduler
@@ -183,6 +184,7 @@
 ; CHECK-NEXT:       Branch relaxation pass
 ; CHECK-NEXT:       RISC-V Make Compressible
 ; CHECK-NEXT:       Machine Copy Propagation Pass
+; CHECK-NEXT:       Unpack machine instruction bundles
 ; CHECK-NEXT:       Contiguously Lay Out Funclets
 ; CHECK-NEXT:       StackMap Liveness Analysis
 ; CHECK-NEXT:       Live DEBUG_VALUE analysis

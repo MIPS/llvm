@@ -127,6 +127,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeRISCVTarget() {
   initializeRISCVInitUndefPass(*PR);
   initializeRISCVMoveMergePass(*PR);
   initializeRISCVPushPopOptPass(*PR);
+  initializeRISCVLoadStoreOptPass(*PR);
 }
 
 static StringRef computeDataLayout(const Triple &TT,
@@ -366,6 +367,12 @@ public:
     if (!MacroFusions.empty()) {
       DAG = DAG ? DAG : createGenericSchedLive(C);
       DAG->addMutation(createMacroFusionDAGMutation(MacroFusions));
+
+      const RISCVSubtarget &ST = C->MF->getSubtarget<RISCVSubtarget>();
+      if (ST.useLoadStorePairs()) {
+        DAG->addMutation(createLoadClusterDAGMutation(DAG->TII, DAG->TRI));
+        DAG->addMutation(createStoreClusterDAGMutation(DAG->TII, DAG->TRI));
+      }
     }
     return DAG;
   }
@@ -514,6 +521,9 @@ void RISCVPassConfig::addPreSched2() {
 
   // Emit KCFI checks for indirect calls.
   addPass(createKCFIPass());
+  if (TM->getOptLevel() != CodeGenOptLevel::None) {
+      addPass(createRISCVLoadStoreOptPass());
+  }
 }
 
 void RISCVPassConfig::addPreEmitPass() {
@@ -528,6 +538,10 @@ void RISCVPassConfig::addPreEmitPass() {
   if (TM->getOptLevel() >= CodeGenOptLevel::Default &&
       EnableRISCVCopyPropagation)
     addPass(createMachineCopyPropagationPass(true));
+  // LoadStoreOptimizer creates bundles for load-store bonding.
+  addPass(createUnpackMachineBundles([](const MachineFunction &MF) {
+    return MF.getSubtarget<RISCVSubtarget>().useLoadStorePairs();
+  }));
 }
 
 void RISCVPassConfig::addPreEmitPass2() {

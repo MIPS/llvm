@@ -2174,6 +2174,37 @@ def : Pat<(select (XLenVT GPR:$rs2), (XLenVT GPR:$rs1), (XLenVT GPR:$rs3)),
 } // Predicates = [HasCCMov]
 
 //===----------------------------------------------------------------------===//
+// MIPS extensions
+//===----------------------------------------------------------------------===//
+
+let Predicates = [HasLoadStorePairs], hasSideEffects = 0 in {
+def LWP : Pseudo<(outs GPR:$rd1, GPR:$rd2), (ins GPR:$rs1, uimm7:$imm7), [],
+                  "lwp", "$rd1, $rd2, ${imm7}(${rs1})">,
+                  Sched<[WriteLDW, WriteLDW, ReadMemBase]> {
+let mayLoad = 1;
+let mayStore = 0;
+}
+def LDP : Pseudo<(outs GPR:$rd1, GPR:$rd2), (ins GPR:$rs1, uimm7:$imm7), [],
+                  "ldp", "$rd1, $rd2, ${imm7}(${rs1})">,
+                  Sched<[WriteLDD, WriteLDD, ReadMemBase]> {
+let mayLoad = 1;
+let mayStore = 0;
+}
+def SWP : Pseudo<(outs), (ins GPR:$rs2, GPR:$rs3, GPR:$rs1, uimm7:$imm7), [],
+                  "swp", "$rs2, $rs3, ${imm7}(${rs1})">,
+                  Sched<[WriteSTW, ReadStoreData, ReadStoreData, ReadMemBase]> {
+let mayLoad = 0;
+let mayStore = 1;
+}
+def SDP : Pseudo<(outs), (ins GPR:$rs2, GPR:$rs3, GPR:$rs1, uimm7:$imm7), [],
+                  "sdp", "$rs2, $rs3, ${imm7}(${rs1})">,
+                  Sched<[WriteSTD, ReadStoreData, ReadStoreData, ReadMemBase]> {
+let mayLoad = 0;
+let mayStore = 1;
+}
+}
+
+//===----------------------------------------------------------------------===//
 // Standard extensions
 //===----------------------------------------------------------------------===//
 
