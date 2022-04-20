@@ -28,6 +28,10 @@ def HasCCMov : Predicate<"Subtarget->hasCCMov()">,
                         AssemblerPredicate<(all_of FeatureCCMov),
                         "'ccmov' instruction">;
 
+def FeatureLoadStorePairs
+    : SubtargetFeature<"load-store-pairs", "HasLoadStorePairs", "true",
+                       "Optimize for hardware load-store bonding">;
+
 //===----------------------------------------------------------------------===//
 // Named operands for CSR instructions.
 //===----------------------------------------------------------------------===//

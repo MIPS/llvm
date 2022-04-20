@@ -94,6 +94,7 @@ public:
     return &TSInfo;
   }
   bool enableMachineScheduler() const override { return true; }
+  //bool enablePostRAMachineScheduler() const override { return true; }
 
   /// Returns RISCV processor family.
   /// Avoid this function! CPU specifics should be kept local to this class
@@ -109,6 +110,7 @@ public:
   bool hasStdExtZvl() const { return ZvlLen != 0; }
   bool hasStdExtZfhOrZfhmin() const { return HasStdExtZfh || HasStdExtZfhmin; }
   bool is64Bit() const { return HasRV64; }
+  bool useLoadStorePairs() const;
   MVT getXLenVT() const { return XLenVT; }
   unsigned getXLen() const { return XLen; }
   unsigned getFLen() const {

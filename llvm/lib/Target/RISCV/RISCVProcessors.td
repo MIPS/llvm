@@ -165,7 +165,8 @@ def I8500 : RISCVProcessorModel<"i8500",
                                  FeatureStdExtC,
                                  FeatureStdExtZba,
                                  FeatureStdExtZbb,
-                                 FeatureCCMov],
+                                 FeatureCCMov,
+                                 FeatureLoadStorePairs],
                                 [Proci8500]>;
 
 def P8700 : RISCVProcessorModel<"p8700",
@@ -178,7 +179,8 @@ def P8700 : RISCVProcessorModel<"p8700",
                                  FeatureStdExtC,
                                  FeatureStdExtZba,
                                  FeatureStdExtZbb,
-                                 FeatureCCMov],
+                                 FeatureCCMov,
+                                 FeatureLoadStorePairs],
                                 [Procp8700]>;
 
 def SYNTACORE_SCR1_BASE : RISCVProcessorModel<"syntacore-scr1-base",

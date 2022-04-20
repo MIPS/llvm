@@ -128,6 +128,15 @@ public:
   bool verifyInstruction(const MachineInstr &MI,
                          StringRef &ErrInfo) const override;
 
+  bool shouldClusterMemOps(ArrayRef<const MachineOperand *> BaseOps1,
+                           ArrayRef<const MachineOperand *> BaseOps2,
+                           unsigned NumLoads, unsigned NumBytes) const override;
+
+  bool getMemOperandsWithOffsetWidth(
+      const MachineInstr &MI, SmallVectorImpl<const MachineOperand *> &BaseOps,
+      int64_t &Offset, bool &OffsetIsScalable, unsigned &Width,
+      const TargetRegisterInfo *TRI) const override;
+
   bool getMemOperandWithOffsetWidth(const MachineInstr &LdSt,
                                     const MachineOperand *&BaseOp,
                                     int64_t &Offset, unsigned &Width,
@@ -230,6 +239,14 @@ public:
                     const MachineRegisterInfo &MRI) const {
     return hasAllNBitUsers(MI, MRI, 32);
   }
+
+  /// Return true if pairing the given load or store may be paired with another.
+  static bool isPairableLdStInstOpc(unsigned Opc);
+
+  static bool isLdStSafeToPair(const MachineInstr &LdSt, const TargetRegisterInfo *TRI);
+
+  std::optional<std::pair<unsigned, unsigned>>
+  isRVVSpillForZvlsseg(unsigned Opcode) const;
 
 protected:
   const RISCVSubtarget &STI;
