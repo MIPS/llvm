@@ -78,6 +78,8 @@ void initializeRISCVMoveMergePass(PassRegistry &);
 
 FunctionPass *createRISCVPushPopOptimizationPass();
 void initializeRISCVPushPopOptPass(PassRegistry &);
+FunctionPass *createRISCVLoadStoreOptPass();
+void initializeRISCVLoadStoreOptPass(PassRegistry &);
 
 InstructionSelector *
 createRISCVInstructionSelector(const RISCVTargetMachine &,

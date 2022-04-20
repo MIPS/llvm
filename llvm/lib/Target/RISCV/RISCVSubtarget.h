@@ -169,6 +169,7 @@ public:
   unsigned getXLen() const {
     return is64Bit() ? 64 : 32;
   }
+  bool useLoadStorePairs() const;
   unsigned getFLen() const {
     if (HasStdExtD)
       return 64;
