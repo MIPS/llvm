@@ -1156,8 +1156,6 @@ bool RISCVInstrInfo::shouldClusterMemOps(
 
   const MachineInstr &FirstLdSt = *BaseOp1.getParent();
   const MachineInstr &SecondLdSt = *BaseOp2.getParent();
-  FirstLdSt.dump();
-  SecondLdSt.dump();
   unsigned FirstOpc = FirstLdSt.getOpcode();
   unsigned SecondOpc = SecondLdSt.getOpcode();
   const TargetRegisterInfo *TRI = STI.getRegisterInfo();
