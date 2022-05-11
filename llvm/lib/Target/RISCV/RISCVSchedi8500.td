@@ -1,6 +1,6 @@
 def i8500Model : SchedMachineModel {
   let MicroOpBufferSize = 0;
-  let IssueWidth = 2;
+  let IssueWidth = 3;
   let LoadLatency = 3;
   let MispredictPenalty = 6;
   let CompleteModel = 0;
@@ -12,12 +12,7 @@ def i8500Model : SchedMachineModel {
 // 		   daimyo_fpu_long_pipe")
 
 let SchedModel = i8500Model in {
-let BufferSize = 0 in {
-def i8500IntPipe           : ProcResource<1>;
-def i8500MduPipe           : ProcResource<1>;
-def i8500FpuShortPipe      : ProcResource<1>;
-def i8500FpuLongPipe       : ProcResource<1>;
-}
+
 
 
 // (define_cpu_unit "daimyo_gpmul, daimyo_gpdiv" "daimyo_mdu_pipe")
@@ -28,29 +23,31 @@ def i8500FpuLongPipe       : ProcResource<1>;
 // (define_cpu_unit "daimyo_fpu_long, daimyo_fpu_apu" "daimyo_fpu_long_pipe")
 
 let BufferSize = 0 in {
-def i8500GpMul        : ProcResource<1> { let Super = i8500MduPipe; }
-def i8500GpDiv        : ProcResource<1> { let Super = i8500MduPipe; }
+def i8500GpMul        : ProcResource<1>;
+def i8500GpDiv        : ProcResource<1>;
 
-def i8500Agen         : ProcResource<1> { let Super = i8500IntPipe; }
-def i8500Alu1         : ProcResource<1> { let Super = i8500IntPipe; }
-def i8500Lsu          : ProcResource<1> { let Super = i8500IntPipe; }
+def i8500Agen         : ProcResource<1>;
+def i8500Alu1         : ProcResource<1>;
+def i8500Lsu          : ProcResource<1>;
 
-def i8500Control      : ProcResource<1> { let Super = i8500IntPipe; }
-def i8500Ctu          : ProcResource<1> { let Super = i8500IntPipe; }
-def i8500Alu0         : ProcResource<1> { let Super = i8500IntPipe; }
+def i8500Control      : ProcResource<1>;
+def i8500Ctu          : ProcResource<1>;
+def i8500Alu0         : ProcResource<1>;
 
-def i8500FpuShort     : ProcResource<1> { let Super = i8500FpuShortPipe; }
+def i8500FpuShort     : ProcResource<1>;
 
-def i8500FpuLong      : ProcResource<1> { let Super = i8500FpuLongPipe; }
-def i8500FpuApu       : ProcResource<1> { let Super = i8500FpuLongPipe; }
-
-
-def i8500ControlAlu0  : ProcResource<1> { let Super = i8500IntPipe; }
-def i8500AgenAlu1     : ProcResource<1> { let Super = i8500IntPipe; }
+def i8500FpuLong      : ProcResource<1>;
+def i8500FpuApu       : ProcResource<1>;
 
 
-def i8500FpuLongFpuApu : ProcResource<1> { let Super = i8500FpuLongPipe; }
+def i8500ControlAlu0  : ProcResource<1>;
+def i8500AgenAlu1     : ProcResource<1>;
+
+
+//def i8500FpuLongFpuApu : ProcResource<1>;
 }
+
+
 
 def i8500Alu01 : ProcResGroup<[i8500ControlAlu0, i8500AgenAlu1]>;
 
@@ -69,6 +66,7 @@ def : WriteRes<WriteShiftImm32, [i8500Alu01]>;
 def : WriteRes<WriteShiftReg, [i8500Alu01]>;
 def : WriteRes<WriteShiftReg32, [i8500Alu01]>;
 
+
 //zba
 def : WriteRes<WriteSHXADD, [i8500Alu01]>;
 def : WriteRes<WriteSHXADD32, [i8500Alu01]>;
@@ -86,6 +84,7 @@ def : WriteRes<WriteCTZ32, [i8500Alu01]>;
 def : WriteRes<WriteCPOP32, [i8500Alu01]>;
 def : WriteRes<WriteREV8, [i8500Alu01]>;
 def : WriteRes<WriteORCB, [i8500Alu01]>;
+
 }
 
 
@@ -217,7 +216,7 @@ def : WriteRes<WriteFCmp64, [i8500FpuShort, i8500FpuApu]>;
 }
 
 
-let Latency = 2, ResourceCycles = [2, 2] in {
+let Latency = 2, ResourceCycles = [1, 1] in {
 def : WriteRes<WriteFClass32, [i8500FpuShort, i8500FpuApu]>;
 def : WriteRes<WriteFClass64, [i8500FpuShort, i8500FpuApu]>;
 
@@ -277,7 +276,7 @@ def : WriteRes<WriteFMA64, [i8500FpuLong, i8500FpuApu]>;
 //             (eq_attr "mode" "SF")))
 //   "daimyo_fpu_long+daimyo_fpu_apu*22")
 
-let Latency = 22, ResourceCycles = [1, 22] in {
+let Latency = 22, ResourceCycles = [1, 21] in {
 def : WriteRes<WriteFDiv32, [i8500FpuLong, i8500FpuApu]>;
 def : WriteRes<WriteFSqrt32, [i8500FpuLong, i8500FpuApu]>;
 }
@@ -290,7 +289,7 @@ def : WriteRes<WriteFSqrt32, [i8500FpuLong, i8500FpuApu]>;
 //             (eq_attr "mode" "DF")))
 //   "daimyo_fpu_long+daimyo_fpu_apu*30")
 
-let Latency = 30, ResourceCycles = [1, 30] in {
+let Latency = 30, ResourceCycles = [1, 29] in {
 def : WriteRes<WriteFDiv64, [i8500FpuLong, i8500FpuApu]>;
 def : WriteRes<WriteFSqrt64, [i8500FpuLong, i8500FpuApu]>;
 }
@@ -311,9 +310,13 @@ def : ReadAdvance<ReadShiftImm, 0>;
 def : ReadAdvance<ReadShiftImm32, 0>;
 def : ReadAdvance<ReadShiftReg, 0>;
 def : ReadAdvance<ReadShiftReg32, 0>;
+
+
 def : ReadAdvance<ReadSHXADD, 0>;
 def : ReadAdvance<ReadSHXADD32, 0>;
 def : ReadAdvance<ReadRotateReg, 0>;
+
+
 def : ReadAdvance<ReadRotateImm, 0>;
 def : ReadAdvance<ReadCLZ, 0>;
 def : ReadAdvance<ReadCTZ, 0>;
@@ -325,6 +328,8 @@ def : ReadAdvance<ReadCTZ32, 0>;
 def : ReadAdvance<ReadCPOP32, 0>;
 def : ReadAdvance<ReadREV8, 0>;
 def : ReadAdvance<ReadORCB, 0>;
+
+
 def : ReadAdvance<ReadIMul, 0>;
 def : ReadAdvance<ReadIMul32, 0>;
 def : ReadAdvance<ReadIDiv, 0>;

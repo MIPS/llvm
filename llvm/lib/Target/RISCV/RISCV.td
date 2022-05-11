@@ -423,6 +423,10 @@ def TuneSiFive7 : SubtargetFeature<"sifive7", "RISCVProcFamily", "SiFive7",
 
 def Proci8500 : SubtargetFeature<"i8500", "RISCVProcFamily", "Others",
                                    "i8500 processor">;
+
+def Procp8700 : SubtargetFeature<"p8700", "RISCVProcFamily", "Others",
+                                   "p8700 processor">;
+
 //===----------------------------------------------------------------------===//
 // Named operands for CSR instructions.
 //===----------------------------------------------------------------------===//
@@ -441,6 +445,7 @@ include "RISCVRegisterBanks.td"
 include "RISCVSchedRocket.td"
 include "RISCVSchedSiFive7.td"
 include "RISCVSchedi8500.td"
+include "RISCVSchedp8700.td"
 
 //===----------------------------------------------------------------------===//
 // RISC-V processors supported.
@@ -532,6 +537,7 @@ def : ProcessorModel<"i8500", i8500Model, [Feature64Bit,
                                            FeatureStdExtC,
                                            FeatureStdExtZba,
                                            FeatureStdExtZbb],
+                                           
                      [Proci8500]>;
 
 def : ProcessorModel<"i8500NoSched", NoSchedModel, [Feature64Bit,
@@ -543,6 +549,32 @@ def : ProcessorModel<"i8500NoSched", NoSchedModel, [Feature64Bit,
                                            FeatureStdExtZba,
                                            FeatureStdExtZbb]>;
 
+def : ProcessorModel<"p8700", p8700Model, [Feature64Bit,
+                                           FeatureStdExtM,
+                                           FeatureStdExtA,
+                                           FeatureStdExtF,
+                                           FeatureStdExtD,
+                                           FeatureStdExtC,
+                                           FeatureStdExtZba,
+                                           FeatureStdExtZbb],
+                     [Procp8700]>;
+
+def : ProcessorModel<"p8700NoSched", NoSchedModel, [Feature64Bit,
+                                           FeatureStdExtM,
+                                           FeatureStdExtA,
+                                           FeatureStdExtF,
+                                           FeatureStdExtD,
+                                           FeatureStdExtC,
+                                           FeatureStdExtZba,
+                                           FeatureStdExtZbb]>;
+
+def : ProcessorModel<"sifive-u74NoSched", NoSchedModel, [Feature64Bit,
+                                                  FeatureStdExtM,
+                                                  FeatureStdExtA,
+                                                  FeatureStdExtF,
+                                                  FeatureStdExtD,
+                                                  FeatureStdExtC],
+                     [TuneSiFive7]>;
 //===----------------------------------------------------------------------===//
 // Define the RISC-V target.
 //===----------------------------------------------------------------------===//
