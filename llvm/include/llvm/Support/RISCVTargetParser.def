@@ -32,9 +32,6 @@ PROC(SIFIVE_S76, {"sifive-s76"}, FK_64BIT, {"rv64gc"})
 PROC(SIFIVE_U54, {"sifive-u54"}, FK_64BIT, {"rv64gc"})
 PROC(SIFIVE_U74, {"sifive-u74"}, FK_64BIT, {"rv64gc"})
 PROC(I8500, {"i8500"}, FK_64BIT, {""})
-PROC(I8500NS, {"i8500NoSched"}, FK_64BIT, {""})
 PROC(P8700, {"p8700"}, FK_64BIT, {""})
-PROC(P8700NS, {"p8700NoSched"}, FK_64BIT, {""})
-PROC(SIFIVE_U74NS, {"sifive-u74NoSched"}, FK_64BIT, {"rv64gc"})
 
 #undef PROC

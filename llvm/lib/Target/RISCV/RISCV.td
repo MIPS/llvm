@@ -540,15 +540,6 @@ def : ProcessorModel<"i8500", i8500Model, [Feature64Bit,
                                            
                      [Proci8500]>;
 
-def : ProcessorModel<"i8500NoSched", NoSchedModel, [Feature64Bit,
-                                           FeatureStdExtM,
-                                           FeatureStdExtA,
-                                           FeatureStdExtF,
-                                           FeatureStdExtD,
-                                           FeatureStdExtC,
-                                           FeatureStdExtZba,
-                                           FeatureStdExtZbb]>;
-
 def : ProcessorModel<"p8700", p8700Model, [Feature64Bit,
                                            FeatureStdExtM,
                                            FeatureStdExtA,
@@ -559,22 +550,6 @@ def : ProcessorModel<"p8700", p8700Model, [Feature64Bit,
                                            FeatureStdExtZbb],
                      [Procp8700]>;
 
-def : ProcessorModel<"p8700NoSched", NoSchedModel, [Feature64Bit,
-                                           FeatureStdExtM,
-                                           FeatureStdExtA,
-                                           FeatureStdExtF,
-                                           FeatureStdExtD,
-                                           FeatureStdExtC,
-                                           FeatureStdExtZba,
-                                           FeatureStdExtZbb]>;
-
-def : ProcessorModel<"sifive-u74NoSched", NoSchedModel, [Feature64Bit,
-                                                  FeatureStdExtM,
-                                                  FeatureStdExtA,
-                                                  FeatureStdExtF,
-                                                  FeatureStdExtD,
-                                                  FeatureStdExtC],
-                     [TuneSiFive7]>;
 //===----------------------------------------------------------------------===//
 // Define the RISC-V target.
 //===----------------------------------------------------------------------===//

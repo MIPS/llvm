@@ -1,20 +1,9 @@
 def p8700Model : SchedMachineModel {
-  int IssueWidth = 2; // 2x dispatched per cycle
+  int IssueWidth = 4; // 2x dispatched per cycle
   int MicroOpBufferSize = 48; // min(48, 48, 64)
-  int LoadLatency = 4;
+  int LoadLatency = 8;
   int MispredictPenalty = 8; // TODO: Estimated
-
-//   let CompleteModel = 1;
-//   let FullInstRWOverlapCheck = 1;
   let CompleteModel = 0;
-
-//   list<Predicate> UnsupportedFeatures = [HasMips3, HasMips32r6, HasMips64,
-//                                          HasMips64r2, HasMips64r5, HasMips64r6,
-//                                          IsGP64bit, IsPTR64bit,
-//                                          InMicroMips, InMips16Mode,
-//                                          HasCnMips, HasCnMipsP,
-//                                          HasDSP, HasDSPR2, HasMips3D, HasMT,
-//                                          HasCRC];
 }
 
 
@@ -38,13 +27,7 @@ def p8700IssueLDST : ProcResource<1> { let Super = p8700AGQ; }
 def p8700GpDiv : ProcResource<1>;
 def p8700GpMul : ProcResource<1>;
 
-
-// Pseudo-resource used to block CTISTD when handling multi-pipeline splits.
-//def p8700CTISTD : ProcResource<1>;
-
-
 def p8700WriteEitherALU : ProcResGroup<[p8700IssueALU, p8700IssueAL2]>;
-
 
 let Latency = 1 in {
 def : WriteRes<WriteIALU, [p8700WriteEitherALU]>;
@@ -143,19 +126,6 @@ def : WriteRes<WriteIDiv, [p8700GpDiv]>;
 def : WriteRes<WriteIDiv32,  [p8700GpDiv]>;
 }
 
-
-// CTISTD Pipeline
-// ---------------
-
-// let Latency = 1 in {
-// def : WriteRes<WriteJmp, [p8700IssueCTISTD, p8700CTISTD]>;
-// def : WriteRes<WriteJmpReg, [p8700IssueCTISTD, p8700CTISTD]>;
-// }
-
-// let Latency = 2 in {
-// def : WriteRes<WriteJal, [p8700IssueCTISTD, p8700CTISTD]>;
-// def : WriteRes<WriteJalr, [p8700IssueCTISTD, p8700CTISTD]>;
-// }
 let Latency = 1 in {
 def : WriteRes<WriteJmp, [p8700IssueCTISTD]>;
 def : WriteRes<WriteJmpReg, [p8700IssueCTISTD]>;
@@ -167,8 +137,6 @@ def : WriteRes<WriteJalr, [p8700IssueCTISTD]>;
 }
 
 
-
-
 // FPU Pipelines
 // =============
 
@@ -178,8 +146,6 @@ def p8700IssueFPUL : ProcResource<1> { let Super = p8700FPQ; }
 def p8700IssueFPULoad : ProcResource<1> { let Super = p8700FPQ; }
 
 def p8700FpuApu       : ProcResource<1>;
-
-
 
 
 //fadd,fcvt
@@ -200,54 +166,49 @@ def : WriteRes<WriteFALU64, [p8700IssueFPUL, p8700FpuApu]>;
 }
 
 
-
 //fmove, fcmp
 let Latency = 2, ResourceCycles = [1, 1] in {
 //fcmp
-def : WriteRes<WriteFSGNJ32, [i8500FpuShort, i8500FpuApu]>;
-def : WriteRes<WriteFMinMax32, [i8500FpuShort, i8500FpuApu]>;
+def : WriteRes<WriteFSGNJ32, [p8700IssueFPUS, p8700FpuApu]>;
+def : WriteRes<WriteFMinMax32, [p8700IssueFPUS, p8700FpuApu]>;
 
-def : WriteRes<WriteFSGNJ64, [i8500FpuShort, i8500FpuApu]>;
-def : WriteRes<WriteFMinMax64, [i8500FpuShort, i8500FpuApu]>;
+def : WriteRes<WriteFSGNJ64, [p8700IssueFPUS, p8700FpuApu]>;
+def : WriteRes<WriteFMinMax64, [p8700IssueFPUS, p8700FpuApu]>;
 
 
 //fcmp
-def : WriteRes<WriteFCmp32, [i8500FpuShort, i8500FpuApu]>;
-def : WriteRes<WriteFCmp64, [i8500FpuShort, i8500FpuApu]>;
+def : WriteRes<WriteFCmp32, [p8700IssueFPUS, p8700FpuApu]>;
+def : WriteRes<WriteFCmp64, [p8700IssueFPUS, p8700FpuApu]>;
 
-def : WriteRes<WriteFClass32, [i8500FpuShort, i8500FpuApu]>;
-def : WriteRes<WriteFClass64, [i8500FpuShort, i8500FpuApu]>;
+def : WriteRes<WriteFClass32, [p8700IssueFPUS, p8700FpuApu]>;
+def : WriteRes<WriteFClass64, [p8700IssueFPUS, p8700FpuApu]>;
 }
 
 
 //fmadd
 let Latency = 8, ResourceCycles = [1, 1] in {
-def : WriteRes<WriteFMA32, [i8500FpuLong, i8500FpuApu]>;
-def : WriteRes<WriteFMA64, [i8500FpuLong, i8500FpuApu]>;
+def : WriteRes<WriteFMA32, [p8700IssueFPUL, p8700FpuApu]>;
+def : WriteRes<WriteFMA64, [p8700IssueFPUL, p8700FpuApu]>;
 }
 
 
 //fmul
 let Latency = 5, ResourceCycles = [1, 1] in {
-def : WriteRes<WriteFMul32, [i8500FpuLong, i8500FpuApu]>;
-def : WriteRes<WriteFMul64, [i8500FpuLong, i8500FpuApu]>;
+def : WriteRes<WriteFMul32, [p8700IssueFPUL, p8700FpuApu]>;
+def : WriteRes<WriteFMul64, [p8700IssueFPUL, p8700FpuApu]>;
 }
 
 //fdiv,fsqrt
 let Latency = 17, ResourceCycles = [1, 17] in {
-def : WriteRes<WriteFDiv32, [i8500FpuLong, i8500FpuApu]>;
-def : WriteRes<WriteFSqrt32, [i8500FpuLong, i8500FpuApu]>;
+def : WriteRes<WriteFDiv32, [p8700IssueFPUL, p8700FpuApu]>;
+def : WriteRes<WriteFSqrt32, [p8700IssueFPUL, p8700FpuApu]>;
 
-def : WriteRes<WriteFDiv64, [i8500FpuLong, i8500FpuApu]>;
-def : WriteRes<WriteFSqrt64, [i8500FpuLong, i8500FpuApu]>;
+def : WriteRes<WriteFDiv64, [p8700IssueFPUL, p8700FpuApu]>;
+def : WriteRes<WriteFSqrt64, [p8700IssueFPUL, p8700FpuApu]>;
 }
-
-
 
 //others
 def : WriteRes<WriteCSR, [SiFive7PipeB]>;
-
-
 
 
 //===----------------------------------------------------------------------===//
@@ -276,21 +237,7 @@ def : ReadAdvance<ReadIMul, 0>;
 def : ReadAdvance<ReadIMul32, 0>;
 def : ReadAdvance<ReadIDiv, 0>;
 def : ReadAdvance<ReadIDiv32, 0>;
-// def : ReadAdvance<ReadLDB, 0>;
-// def : ReadAdvance<ReadLDH, 0>;
-// def : ReadAdvance<ReadLDW, 0>;
-// def : ReadAdvance<ReadLDWU, 0>;
-// def : ReadAdvance<ReadLDD, 0>;
-// def : ReadAdvance<ReadFLD32, 0>;
-// def : ReadAdvance<ReadFLD64, 0>;
-// def : ReadAdvance<ReadSTB, 0>;
-// def : ReadAdvance<ReadSTH, 0>;
-// def : ReadAdvance<ReadSTW, 0>;
-// def : ReadAdvance<ReadSTD, 0>;
-// def : ReadAdvance<ReadFST32, 0>;
-// def : ReadAdvance<ReadFST64, 0>;
 def : ReadAdvance<ReadJmp, 0>;
-// def : ReadAdvance<ReadJal, 0>;
 def : ReadAdvance<ReadJalr, 0>;
 def : ReadAdvance<ReadFMovI32ToF32, 0>;
 def : ReadAdvance<ReadFMovF32ToI32, 0>;
@@ -322,8 +269,6 @@ def : ReadAdvance<ReadFDiv32, 0>;
 def : ReadAdvance<ReadFSqrt32, 0>;
 def : ReadAdvance<ReadFDiv64, 0>;
 def : ReadAdvance<ReadFSqrt64, 0>;
-
-//
 def : ReadAdvance<ReadAtomicWA, 0>;
 def : ReadAdvance<ReadAtomicWD, 0>;
 def : ReadAdvance<ReadAtomicDA, 0>;
@@ -332,19 +277,12 @@ def : ReadAdvance<ReadAtomicLDW, 0>;
 def : ReadAdvance<ReadAtomicLDD, 0>;
 def : ReadAdvance<ReadAtomicSTW, 0>;
 def : ReadAdvance<ReadAtomicSTD, 0>;
-
-//
 def : ReadAdvance<ReadCSR, 0>;
-
 def : ReadAdvance<ReadMemBase, 0>;
 def : ReadAdvance<ReadStoreData, 0>;
-
 def : ReadAdvance<ReadFMemBase, 0>;
-
-//
 def : ReadAdvance<ReadFClass32, 0>;
 def : ReadAdvance<ReadFClass64, 0>;
-
 
 
 // Unsupported extensions

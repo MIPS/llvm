@@ -1,10 +1,9 @@
 def i8500Model : SchedMachineModel {
-  let MicroOpBufferSize = 0;
+  let MicroOpBufferSize = 1;
   let IssueWidth = 3;
   let LoadLatency = 3;
   let MispredictPenalty = 6;
   let CompleteModel = 0;
-  //let UnsupportedFeatures = [HasStdExtV, HasStdExtZvlsseg];
 }
 
 
@@ -43,11 +42,7 @@ def i8500FpuApu       : ProcResource<1>;
 def i8500ControlAlu0  : ProcResource<1>;
 def i8500AgenAlu1     : ProcResource<1>;
 
-
-//def i8500FpuLongFpuApu : ProcResource<1>;
 }
-
-
 
 def i8500Alu01 : ProcResGroup<[i8500ControlAlu0, i8500AgenAlu1]>;
 
@@ -298,7 +293,6 @@ def : WriteRes<WriteFSqrt64, [i8500FpuLong, i8500FpuApu]>;
 // Others
 def : WriteRes<WriteCSR, [SiFive7PipeB]>;
 def : WriteRes<WriteNop, []>;
-
 def : InstRW<[WriteIALU], (instrs COPY)>;
 
 
@@ -310,13 +304,9 @@ def : ReadAdvance<ReadShiftImm, 0>;
 def : ReadAdvance<ReadShiftImm32, 0>;
 def : ReadAdvance<ReadShiftReg, 0>;
 def : ReadAdvance<ReadShiftReg32, 0>;
-
-
 def : ReadAdvance<ReadSHXADD, 0>;
 def : ReadAdvance<ReadSHXADD32, 0>;
 def : ReadAdvance<ReadRotateReg, 0>;
-
-
 def : ReadAdvance<ReadRotateImm, 0>;
 def : ReadAdvance<ReadCLZ, 0>;
 def : ReadAdvance<ReadCTZ, 0>;
@@ -328,27 +318,11 @@ def : ReadAdvance<ReadCTZ32, 0>;
 def : ReadAdvance<ReadCPOP32, 0>;
 def : ReadAdvance<ReadREV8, 0>;
 def : ReadAdvance<ReadORCB, 0>;
-
-
 def : ReadAdvance<ReadIMul, 0>;
 def : ReadAdvance<ReadIMul32, 0>;
 def : ReadAdvance<ReadIDiv, 0>;
 def : ReadAdvance<ReadIDiv32, 0>;
-// def : ReadAdvance<ReadLDB, 0>;
-// def : ReadAdvance<ReadLDH, 0>;
-// def : ReadAdvance<ReadLDW, 0>;
-// def : ReadAdvance<ReadLDWU, 0>;
-// def : ReadAdvance<ReadLDD, 0>;
-// def : ReadAdvance<ReadFLD32, 0>;
-// def : ReadAdvance<ReadFLD64, 0>;
-// def : ReadAdvance<ReadSTB, 0>;
-// def : ReadAdvance<ReadSTH, 0>;
-// def : ReadAdvance<ReadSTW, 0>;
-// def : ReadAdvance<ReadSTD, 0>;
-// def : ReadAdvance<ReadFST32, 0>;
-// def : ReadAdvance<ReadFST64, 0>;
 def : ReadAdvance<ReadJmp, 0>;
-// def : ReadAdvance<ReadJal, 0>;
 def : ReadAdvance<ReadJalr, 0>;
 def : ReadAdvance<ReadFMovI32ToF32, 0>;
 def : ReadAdvance<ReadFMovF32ToI32, 0>;
@@ -380,8 +354,6 @@ def : ReadAdvance<ReadFDiv32, 0>;
 def : ReadAdvance<ReadFSqrt32, 0>;
 def : ReadAdvance<ReadFDiv64, 0>;
 def : ReadAdvance<ReadFSqrt64, 0>;
-
-//
 def : ReadAdvance<ReadAtomicWA, 0>;
 def : ReadAdvance<ReadAtomicWD, 0>;
 def : ReadAdvance<ReadAtomicDA, 0>;
@@ -390,19 +362,12 @@ def : ReadAdvance<ReadAtomicLDW, 0>;
 def : ReadAdvance<ReadAtomicLDD, 0>;
 def : ReadAdvance<ReadAtomicSTW, 0>;
 def : ReadAdvance<ReadAtomicSTD, 0>;
-
-//
 def : ReadAdvance<ReadCSR, 0>;
-
 def : ReadAdvance<ReadMemBase, 0>;
 def : ReadAdvance<ReadStoreData, 0>;
-
 def : ReadAdvance<ReadFMemBase, 0>;
-
-//
 def : ReadAdvance<ReadFClass32, 0>;
 def : ReadAdvance<ReadFClass64, 0>;
-//
 
 //===----------------------------------------------------------------------===//
 // Unsupported extensions
