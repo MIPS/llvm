@@ -167,17 +167,6 @@ def I8500 : RISCVProcessorModel<"i8500",
                                 FeatureStdExtZbb],
                                 [Proci8500]>;
 
-def I8500_NO_SCHED : RISCVProcessorModel<"i8500NoSched",
-                                         NoSchedModel,
-                                         [Feature64Bit,
-                                         FeatureStdExtM,
-                                         FeatureStdExtA,
-                                         FeatureStdExtF,
-                                         FeatureStdExtD,
-                                         FeatureStdExtC,
-                                         FeatureStdExtZba,
-                                         FeatureStdExtZbb]>;
-
 def P8700 : RISCVProcessorModel<"p8700",
                                 p8700Model,
                                 [Feature64Bit,
@@ -189,17 +178,6 @@ def P8700 : RISCVProcessorModel<"p8700",
                                  FeatureStdExtZba,
                                  FeatureStdExtZbb],
                                 [Procp8700]>;
-
-def P8700_NO_SCHED : RISCVProcessorModel<"p8700NoSched",
-                                         NoSchedModel,
-                                         [Feature64Bit,
-                                          FeatureStdExtM,
-                                          FeatureStdExtA,
-                                          FeatureStdExtF,
-                                          FeatureStdExtD,
-                                          FeatureStdExtC,
-                                          FeatureStdExtZba,
-                                          FeatureStdExtZbb]>;
 
 def SYNTACORE_SCR1_BASE : RISCVProcessorModel<"syntacore-scr1-base",
                                               SyntacoreSCR1Model,
