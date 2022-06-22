@@ -221,8 +221,11 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
   const bool IsMips = Triple.isMIPS();
   const bool IsHexagon = Arch == llvm::Triple::hexagon;
   const bool IsRISCV = Triple.isRISCV();
+  const bool IsMipsSysRoot = IsMips ||
+			     (IsRISCV &&
+			      Triple.getVendor() == llvm::Triple::MipsTechnologies);
 
-  if (IsMips && !SysRoot.empty())
+  if (IsMipsSysRoot && !SysRoot.empty())
     ExtraOpts.push_back("--sysroot=" + SysRoot);
 
   // Do not use 'gnu' hash style for Mips targets because .gnu.hash
@@ -361,7 +364,11 @@ std::string Linux::computeSysRoot() const {
       return AndroidSysRootPath;
   }
 
-  if (!GCCInstallation.isValid() || !getTriple().isMIPS())
+  bool IsMipsSysRoot = getTriple().isMIPS() ||
+		       (getTriple().isRISCV() &&
+		        getTriple().getVendor() == llvm::Triple::MipsTechnologies);
+
+  if (!GCCInstallation.isValid() || !IsMipsSysRoot)
     return std::string();
 
   // Standalone MIPS toolchains use different names for sysroot folder
@@ -371,8 +378,18 @@ std::string Linux::computeSysRoot() const {
   const StringRef InstallDir = GCCInstallation.getInstallPath();
   const StringRef TripleStr = GCCInstallation.getTriple().str();
   const Multilib &Multilib = GCCInstallation.getMultilib();
+  std::string Path;
 
-  std::string Path =
+  if (getTriple().isRISCV()) {
+    Path = (InstallDir + "/../../../../sysroot" + Multilib.osSuffix() + "/../..").str();
+
+    if (getVFS().exists(Path))
+      return Path;
+
+    return std::string();
+  }
+
+  Path =
       (InstallDir + "/../../../../" + TripleStr + "/libc" + Multilib.osSuffix())
           .str();
 

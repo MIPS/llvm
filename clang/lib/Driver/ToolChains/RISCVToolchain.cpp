@@ -158,6 +158,14 @@ void RISCV::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("elf32lriscv");
   }
 
+  if (ToolChain.getTriple().getVendor() == llvm::Triple::MipsTechnologies) {
+    bool IsBigEndian = false;
+    if (Arg *A = Args.getLastArg(options::OPT_mlittle_endian,
+				 options::OPT_mbig_endian))
+      IsBigEndian = A->getOption().matches(options::OPT_mbig_endian);
+    CmdArgs.push_back(IsBigEndian ? "-EB" : "-EL");
+  }
+
   std::string Linker = getToolChain().GetLinkerPath();
 
   bool WantCRTs =
@@ -211,5 +219,11 @@ void RISCV::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   C.addCommand(std::make_unique<Command>(
       JA, *this, ResponseFileSupport::AtFileCurCP(), Args.MakeArgString(Linker),
       CmdArgs, Inputs, Output));
+}
+
+bool RISCVToolChain::IsIntegratedAssemblerDefault() const {
+  if (getTriple().getVendor() != llvm::Triple::MipsTechnologies)
+    return true;
+  return false;
 }
 // RISCV tools end.

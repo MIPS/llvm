@@ -32,10 +32,10 @@ define i32 @udiv_constant_no_add(i32 %a) nounwind {
 ;
 ; RV64IMZB-LABEL: udiv_constant_no_add:
 ; RV64IMZB:       # %bb.0:
-; RV64IMZB-NEXT:    zext.w a0, a0
+; RV64IMZB-NEXT:    add.uw a0, a0, zero
 ; RV64IMZB-NEXT:    lui a1, 838861
 ; RV64IMZB-NEXT:    addiw a1, a1, -819
-; RV64IMZB-NEXT:    zext.w a1, a1
+; RV64IMZB-NEXT:    add.uw a1, a1, zero
 ; RV64IMZB-NEXT:    mul a0, a0, a1
 ; RV64IMZB-NEXT:    srli a0, a0, 34
 ; RV64IMZB-NEXT:    ret
@@ -72,7 +72,7 @@ define i32 @udiv_constant_add(i32 %a) nounwind {
 ;
 ; RV64IMZB-LABEL: udiv_constant_add:
 ; RV64IMZB:       # %bb.0:
-; RV64IMZB-NEXT:    zext.w a1, a0
+; RV64IMZB-NEXT:    add.uw a1, a0, zero
 ; RV64IMZB-NEXT:    lui a2, 149797
 ; RV64IMZB-NEXT:    addiw a2, a2, -1755
 ; RV64IMZB-NEXT:    mul a1, a1, a2

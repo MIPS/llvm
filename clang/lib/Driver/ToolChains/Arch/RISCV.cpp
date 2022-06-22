@@ -284,12 +284,14 @@ StringRef riscv::getRISCVArch(const llvm::opt::ArgList &Args,
   // - On `riscv{XLEN}-unknown-elf` we default to `rv{XLEN}imac`
   // - On all other OSs we use `rv{XLEN}imafdc` (equivalent to `rv{XLEN}gc`)
   if (Triple.getArch() == llvm::Triple::riscv32) {
-    if (Triple.getOS() == llvm::Triple::UnknownOS)
+    if (Triple.getOS() == llvm::Triple::UnknownOS &&
+	Triple.getVendor() != llvm::Triple::MipsTechnologies)
       return "rv32imac";
     else
       return "rv32imafdc";
   } else {
-    if (Triple.getOS() == llvm::Triple::UnknownOS)
+    if (Triple.getOS() == llvm::Triple::UnknownOS &&
+	Triple.getVendor() != llvm::Triple::MipsTechnologies)
       return "rv64imac";
     else
       return "rv64imafdc";

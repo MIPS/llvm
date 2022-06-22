@@ -1733,7 +1733,7 @@ define i64 @imm_2863311530() {
 ; RV64IZBA:       # %bb.0:
 ; RV64IZBA-NEXT:    lui a0, 699051
 ; RV64IZBA-NEXT:    addiw a0, a0, -1366
-; RV64IZBA-NEXT:    zext.w a0, a0
+; RV64IZBA-NEXT:    add.uw a0, a0, zero
 ; RV64IZBA-NEXT:    ret
 ;
 ; RV64IZBB-LABEL: imm_2863311530:

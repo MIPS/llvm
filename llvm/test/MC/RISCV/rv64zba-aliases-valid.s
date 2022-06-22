@@ -16,13 +16,13 @@
 #                        aliases disabled
 
 # CHECK-S-OBJ-NOALIAS: add.uw t0, t1, zero
-# CHECK-S-OBJ: zext.w t0, t1
+# CHECK-S-OBJ: add.uw t0, t1, zero
 zext.w x5, x6
 
 # CHECK-S-OBJ-NOALIAS: addi t1, zero, -2
 # CHECK-S-OBJ-NOALIAS-NEXT: add.uw t1, t1, zero
 # CHECK-S-OBJ: li t1, -2
-# CHECK-S-OBJ-NEXT: zext.w t1, t1
+# CHECK-S-OBJ-NEXT: add.uw t1, t1, zero
 li x6, 0xfffffffe
 
 # CHECK-S-OBJ-NOALIAS: lui t2, 699051
@@ -30,7 +30,7 @@ li x6, 0xfffffffe
 # CHECK-S-OBJ-NOALIAS-NEXT: add.uw t2, t2, zero
 # CHECK-S-OBJ: lui t2, 699051
 # CHECK-S-OBJ-NEXT: addiw t2, t2, -1366
-# CHECK-S-OBJ-NEXT: zext.w t2, t2
+# CHECK-S-OBJ-NEXT: add.uw t2, t2, zero
 li x7, 0xaaaaaaaa
 
 # CHECK-S-OBJ-NOALIAS: lui t0, 768955
