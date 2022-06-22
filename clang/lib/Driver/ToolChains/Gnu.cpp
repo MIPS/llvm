@@ -252,9 +252,18 @@ static const char *getLDMOption(const llvm::Triple &T, const ArgList &Args) {
   case llvm::Triple::ppc64le:
     return "elf64lppc";
   case llvm::Triple::riscv32:
-    return "elf32lriscv";
   case llvm::Triple::riscv64:
-    return "elf64lriscv";
+  {
+    bool IsBigEndian = false;
+    if (Arg *A = Args.getLastArg(options::OPT_mlittle_endian,
+				 options::OPT_mbig_endian))
+      IsBigEndian = A->getOption().matches(options::OPT_mbig_endian);
+
+    if (T.getArch() == llvm::Triple::riscv32)
+      return IsBigEndian ? "elf32briscv" : "elf32lriscv";
+    else
+      return IsBigEndian ? "elf64briscv" : "elf64lriscv";
+  }
   case llvm::Triple::sparc:
   case llvm::Triple::sparcel:
     return "elf32_sparc";
@@ -404,6 +413,14 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back(Arch == llvm::Triple::aarch64_be ? "-EB" : "-EL");
   }
 
+  if (Triple.isRISCV() &&
+      Triple.getVendor() == llvm::Triple::MipsTechnologies) {
+    bool IsBigEndian = false;
+    if (Arg *A = Args.getLastArg(options::OPT_mlittle_endian,
+				 options::OPT_mbig_endian))
+      IsBigEndian = A->getOption().matches(options::OPT_mbig_endian);
+    CmdArgs.push_back(IsBigEndian ? "-EB" : "-EL");
+  }
   // Most Android ARM64 targets should enable the linker fix for erratum
   // 843419. Only non-Cortex-A53 devices are allowed to skip this flag.
   if (Arch == llvm::Triple::aarch64 && (isAndroid || isOHOSFamily)) {
@@ -766,14 +783,23 @@ void tools::gnutools::Assembler::ConstructJob(Compilation &C,
   }
   case llvm::Triple::riscv32:
   case llvm::Triple::riscv64: {
-    StringRef ABIName = riscv::getRISCVABI(Args, getToolChain().getTriple());
+    const llvm::Triple &Triple = getToolChain().getTriple();
+    StringRef ABIName = riscv::getRISCVABI(Args, Triple);
     CmdArgs.push_back("-mabi");
     CmdArgs.push_back(ABIName.data());
-    StringRef MArchName = riscv::getRISCVArch(Args, getToolChain().getTriple());
+    StringRef MArchName = riscv::getRISCVArch(Args, Triple);
     CmdArgs.push_back("-march");
     CmdArgs.push_back(MArchName.data());
     if (!Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true))
       Args.addOptOutFlag(CmdArgs, options::OPT_mrelax, options::OPT_mno_relax);
+
+    if (Triple.getVendor() == llvm::Triple::MipsTechnologies) {
+      bool IsBigEndian = false;
+      if (Arg *A = Args.getLastArg(options::OPT_mlittle_endian,
+				   options::OPT_mbig_endian))
+        IsBigEndian = A->getOption().matches(options::OPT_mbig_endian);
+      CmdArgs.push_back(IsBigEndian ? "-EB" : "-EL");
+    }
     break;
   }
   case llvm::Triple::sparc:
@@ -1869,9 +1895,18 @@ static void findRISCVBareMetalMultilibs(const Driver &D,
             .flag(Twine("-march=", Element.march).str())
             .flag(Twine("-mabi=", Element.mabi).str()));
   }
+  SmallVector<MultilibBuilder, 2> Endian;
+  if (TargetTriple.getVendor() == llvm::Triple::MipsTechnologies) {
+    Endian.push_back(
+        MultilibBuilder("/riscv").flag("-EL").flag("-EB", /*Disallow=*/true));
+    Endian.push_back(
+        MultilibBuilder("/riscveb").flag("-EB").flag("-EL", /*Disallow=*/true));
+  }
   MultilibSet RISCVMultilibs =
       MultilibSetBuilder()
           .Either(Ms)
+          .Either(Endian)
+          .Either(ArrayRef<MultilibBuilder>(Ms))
           .makeMultilibSet()
           .FilterOut(NonExistent)
           .setFilePathsCallback([](const Multilib &M) {
@@ -1895,7 +1930,20 @@ static void findRISCVBareMetalMultilibs(const Driver &D,
     }
   }
 
-  if (selectRISCVMultilib(RISCVMultilibs, MArch, Flags,
+  bool IsBigEndian = false;
+  if (Arg *A = Args.getLastArg(options::OPT_mlittle_endian,
+			       options::OPT_mbig_endian))
+    IsBigEndian = A->getOption().matches(options::OPT_mbig_endian);
+
+  if (IsBigEndian) {
+    D.Diag(diag::err_drv_unsupported_opt_for_target)
+    << "-EB" << TargetTriple.str();
+  }
+
+  addMultilibFlag(IsBigEndian, "-EB", Flags);
+  addMultilibFlag(!IsBigEndian, "-EL", Flags);
+
+    if (selectRISCVMultilib(RISCVMultilibs, MArch, Flags,
                           Result.SelectedMultilibs))
     Result.Multilibs = RISCVMultilibs;
 }
@@ -1919,8 +1967,18 @@ static void findRISCVMultilibs(const Driver &D,
       MultilibBuilder("lib64/lp64f").flag("-m64").flag("-mabi=lp64f");
   MultilibBuilder Lp64d =
       MultilibBuilder("lib64/lp64d").flag("-m64").flag("-mabi=lp64d");
+
+  SmallVector<MultilibBuilder, 2> Endian;
+  if (TargetTriple.getVendor() == llvm::Triple::MipsTechnologies) {
+    Endian.push_back(
+        MultilibBuilder("/riscv").flag("-EL").flag("-EB", /*Disallow=*/true));
+    Endian.push_back(
+        MultilibBuilder("/riscveb").flag("-EB").flag("-EL", /*Disallow=*/true));
+  }
+  
   MultilibSet RISCVMultilibs =
       MultilibSetBuilder()
+         .Either(Endian)
           .Either({Ilp32, Ilp32f, Ilp32d, Lp64, Lp64f, Lp64d})
           .makeMultilibSet()
           .FilterOut(NonExistent);
@@ -1928,6 +1986,15 @@ static void findRISCVMultilibs(const Driver &D,
   Multilib::flags_list Flags;
   bool IsRV64 = TargetTriple.getArch() == llvm::Triple::riscv64;
   StringRef ABIName = tools::riscv::getRISCVABI(Args, TargetTriple);
+  bool IsBigEndian = false;
+  if (Arg *A = Args.getLastArg(options::OPT_mlittle_endian,
+			       options::OPT_mbig_endian))
+    IsBigEndian = A->getOption().matches(options::OPT_mbig_endian);
+
+  if (IsBigEndian) {
+    D.Diag(diag::err_drv_unsupported_opt_for_target)
+    << "-EB" << TargetTriple.str();
+  }
 
   addMultilibFlag(!IsRV64, "-m32", Flags);
   addMultilibFlag(IsRV64, "-m64", Flags);
@@ -1937,6 +2004,8 @@ static void findRISCVMultilibs(const Driver &D,
   addMultilibFlag(ABIName == "lp64", "-mabi=lp64", Flags);
   addMultilibFlag(ABIName == "lp64f", "-mabi=lp64f", Flags);
   addMultilibFlag(ABIName == "lp64d", "-mabi=lp64d", Flags);
+  addMultilibFlag(IsBigEndian, "-EB", Flags);
+  addMultilibFlag(!IsBigEndian, "-EL", Flags);
 
   if (RISCVMultilibs.select(Flags, Result.SelectedMultilibs))
     Result.Multilibs = RISCVMultilibs;
@@ -2562,7 +2631,8 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
   static const char *const RISCV64LibDirs[] = {"/lib64", "/lib"};
   static const char *const RISCV64Triples[] = {"riscv64-unknown-linux-gnu",
                                                "riscv64-linux-gnu",
-                                               "riscv64-unknown-elf"};
+                                               "riscv64-unknown-elf",
+                                               "riscv64-mti-elf"};
 
   static const char *const SPARCv8LibDirs[] = {"/lib32", "/lib"};
   static const char *const SPARCv8Triples[] = {"sparc-linux-gnu",
@@ -3133,6 +3203,45 @@ bool Generic_GCC::IsIntegratedAssemblerDefault() const {
   case llvm::Triple::nvptx:
   case llvm::Triple::nvptx64:
   case llvm::Triple::xcore:
+    return false;
+  case llvm::Triple::aarch64:
+  case llvm::Triple::aarch64_be:
+  case llvm::Triple::amdgcn:
+  case llvm::Triple::arm:
+  case llvm::Triple::armeb:
+  case llvm::Triple::avr:
+  case llvm::Triple::bpfel:
+  case llvm::Triple::bpfeb:
+  case llvm::Triple::csky:
+  case llvm::Triple::hexagon:
+  case llvm::Triple::lanai:
+  case llvm::Triple::loongarch32:
+  case llvm::Triple::loongarch64:
+  case llvm::Triple::m68k:
+  case llvm::Triple::mips:
+  case llvm::Triple::mipsel:
+  case llvm::Triple::mips64:
+  case llvm::Triple::mips64el:
+  case llvm::Triple::msp430:
+  case llvm::Triple::ppc:
+  case llvm::Triple::ppcle:
+  case llvm::Triple::ppc64:
+  case llvm::Triple::ppc64le:
+  case llvm::Triple::r600:
+  case llvm::Triple::sparc:
+  case llvm::Triple::sparcel:
+  case llvm::Triple::sparcv9:
+  case llvm::Triple::systemz:
+  case llvm::Triple::thumb:
+  case llvm::Triple::thumbeb:
+  case llvm::Triple::ve:
+  case llvm::Triple::x86:
+  case llvm::Triple::x86_64:
+    return true;
+  case llvm::Triple::riscv32:
+  case llvm::Triple::riscv64:
+    if (getTriple().getVendor() != llvm::Triple::MipsTechnologies)
+      return true;
     return false;
   default:
     return true;
