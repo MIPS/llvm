@@ -162,7 +162,8 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const llvm::Triple &Triple,
 
   // GCC Compatibility: -mno-save-restore is default, unless -msave-restore is
   // specified.
-  if (Args.hasFlag(options::OPT_msave_restore, options::OPT_mno_save_restore, false))
+  if (Args.hasFlag(options::OPT_msave_restore, options::OPT_mno_save_restore,
+                   false))
     Features.push_back("+save-restore");
   else
     Features.push_back("-save-restore");
@@ -306,12 +307,14 @@ StringRef riscv::getRISCVArch(const llvm::opt::ArgList &Args,
   // - On `riscv{XLEN}-unknown-elf` we default to `rv{XLEN}imac`
   // - On all other OSs we use `rv{XLEN}imafdc` (equivalent to `rv{XLEN}gc`)
   if (Triple.isRISCV32()) {
-    if (Triple.getOS() == llvm::Triple::UnknownOS)
+    if (Triple.getOS() == llvm::Triple::UnknownOS &&
+        Triple.getVendor() != llvm::Triple::MipsTechnologies)
       return "rv32imac";
     else
       return "rv32imafdc";
   } else {
-    if (Triple.getOS() == llvm::Triple::UnknownOS)
+    if (Triple.getOS() == llvm::Triple::UnknownOS &&
+        Triple.getVendor() != llvm::Triple::MipsTechnologies)
       return "rv64imac";
     else if (Triple.isAndroid())
       return "rv64imafdc_zba_zbb_zbs";
