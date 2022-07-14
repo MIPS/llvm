@@ -1921,6 +1921,9 @@ bool RISCVInstrInfo::isLdStSafeToPair(const MachineInstr &LdSt,
   if (LdSt.modifiesRegister(LdSt.getOperand(1).getReg(), TRI))
     return false;
 
+  if (!LdSt.getOperand(2).isImm())
+    return false;
+
   return true;
 }
 
