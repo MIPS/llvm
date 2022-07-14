@@ -13,8 +13,12 @@
 ; RUN:   | FileCheck %s -check-prefix=RV32D_PAIR
 ; RUN: llc -mtriple=riscv64 -mattr=+load-store-pairs -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s -check-prefix=RV64I_PAIR
+; RUN: llc -mtriple=riscv64 -mcpu i8500 -verify-machineinstrs < %s \
+; RUN:   | FileCheck %s -check-prefix=RV64I_8500
 ; RUN: llc -mtriple=riscv64 -target-abi lp64d -mattr=+d,+load-store-pairs -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s -check-prefix=RV64D_PAIR
+; RUN: llc -mtriple=riscv64 -target-abi lp64d -mattr=+d -verify-machineinstrs < %s \
+; RUN:   | FileCheck %s -check-prefix=RV64D_8500
 
 define dso_local void @testi(i8** nocapture noundef readonly %a) local_unnamed_addr #0 {
 ; RV32I-LABEL: testi:
@@ -192,6 +196,27 @@ define dso_local void @testi(i8** nocapture noundef readonly %a) local_unnamed_a
 ; RV64I_PAIR-NEXT:    addi sp, sp, 32
 ; RV64I_PAIR-NEXT:    ret
 ;
+; RV64I_8500-LABEL: testi:
+; RV64I_8500:       # %bb.0: # %entry
+; RV64I_8500-NEXT:    addi sp, sp, -32
+; RV64I_8500-NEXT:    .cfi_def_cfa_offset 32
+; RV64I_8500-NEXT:    sdp s3, s2, 16(sp) # 16-byte Folded Spill
+; RV64I_8500-NEXT:    sdp s5, s4, 0(sp) # 16-byte Folded Spill
+; RV64I_8500-NEXT:    .cfi_offset s2, -8
+; RV64I_8500-NEXT:    .cfi_offset s3, -16
+; RV64I_8500-NEXT:    .cfi_offset s4, -24
+; RV64I_8500-NEXT:    .cfi_offset s5, -32
+; RV64I_8500-NEXT:    ld s3, 0(a0)
+; RV64I_8500-NEXT:    ld s2, 8(a0)
+; RV64I_8500-NEXT:    ld s5, 16(a0)
+; RV64I_8500-NEXT:    ld s4, 24(a0)
+; RV64I_8500-NEXT:    #APP
+; RV64I_8500-NEXT:    #NO_APP
+; RV64I_8500-NEXT:    ldp s3, s2, 16(sp) # 16-byte Folded Reload
+; RV64I_8500-NEXT:    ldp s5, s4, 0(sp) # 16-byte Folded Reload
+; RV64I_8500-NEXT:    addi sp, sp, 32
+; RV64I_8500-NEXT:    ret
+;
 ; RV64D_PAIR-LABEL: testi:
 ; RV64D_PAIR:       # %bb.0: # %entry
 ; RV64D_PAIR-NEXT:    addi sp, sp, -32
@@ -216,6 +241,31 @@ define dso_local void @testi(i8** nocapture noundef readonly %a) local_unnamed_a
 ; RV64D_PAIR-NEXT:    ld s4, 8(sp) # 8-byte Folded Reload
 ; RV64D_PAIR-NEXT:    addi sp, sp, 32
 ; RV64D_PAIR-NEXT:    ret
+;
+; RV64D_8500-LABEL: testi:
+; RV64D_8500:       # %bb.0: # %entry
+; RV64D_8500-NEXT:    addi sp, sp, -32
+; RV64D_8500-NEXT:    .cfi_def_cfa_offset 32
+; RV64D_8500-NEXT:    sd s2, 24(sp) # 8-byte Folded Spill
+; RV64D_8500-NEXT:    sd s3, 16(sp) # 8-byte Folded Spill
+; RV64D_8500-NEXT:    sd s4, 8(sp) # 8-byte Folded Spill
+; RV64D_8500-NEXT:    sd s5, 0(sp) # 8-byte Folded Spill
+; RV64D_8500-NEXT:    .cfi_offset s2, -8
+; RV64D_8500-NEXT:    .cfi_offset s3, -16
+; RV64D_8500-NEXT:    .cfi_offset s4, -24
+; RV64D_8500-NEXT:    .cfi_offset s5, -32
+; RV64D_8500-NEXT:    ld s2, 8(a0)
+; RV64D_8500-NEXT:    ld s3, 0(a0)
+; RV64D_8500-NEXT:    ld s4, 24(a0)
+; RV64D_8500-NEXT:    ld s5, 16(a0)
+; RV64D_8500-NEXT:    #APP
+; RV64D_8500-NEXT:    #NO_APP
+; RV64D_8500-NEXT:    ld s2, 24(sp) # 8-byte Folded Reload
+; RV64D_8500-NEXT:    ld s3, 16(sp) # 8-byte Folded Reload
+; RV64D_8500-NEXT:    ld s4, 8(sp) # 8-byte Folded Reload
+; RV64D_8500-NEXT:    ld s5, 0(sp) # 8-byte Folded Reload
+; RV64D_8500-NEXT:    addi sp, sp, 32
+; RV64D_8500-NEXT:    ret
 entry:
   %arrayidx = getelementptr inbounds i8*, i8** %a, i64 1
   %0 = load i8*, i8** %arrayidx, align 8
@@ -286,6 +336,14 @@ define dso_local void @testf(float* nocapture noundef readonly %a) local_unnamed
 ; RV64I_PAIR-NEXT:    lw a0, 4(a0)
 ; RV64I_PAIR-NEXT:    tail sinkf
 ;
+; RV64I_8500-LABEL: testf:
+; RV64I_8500:       # %bb.0: # %entry
+; RV64I_8500-NEXT:    flw fa0, 4(a0)
+; RV64I_8500-NEXT:    flw fa2, 8(a0)
+; RV64I_8500-NEXT:    flw fa1, 12(a0)
+; RV64I_8500-NEXT:    flw fa3, 0(a0)
+; RV64I_8500-NEXT:    tail sinkf
+;
 ; RV64D_PAIR-LABEL: testf:
 ; RV64D_PAIR:       # %bb.0: # %entry
 ; RV64D_PAIR-NEXT:    flw fa0, 4(a0)
@@ -293,6 +351,14 @@ define dso_local void @testf(float* nocapture noundef readonly %a) local_unnamed
 ; RV64D_PAIR-NEXT:    flw fa1, 12(a0)
 ; RV64D_PAIR-NEXT:    flw fa3, 0(a0)
 ; RV64D_PAIR-NEXT:    tail sinkf
+;
+; RV64D_8500-LABEL: testf:
+; RV64D_8500:       # %bb.0: # %entry
+; RV64D_8500-NEXT:    flw fa0, 4(a0)
+; RV64D_8500-NEXT:    flw fa1, 12(a0)
+; RV64D_8500-NEXT:    flw fa2, 8(a0)
+; RV64D_8500-NEXT:    flw fa3, 0(a0)
+; RV64D_8500-NEXT:    tail sinkf
 entry:
   %arrayidx = getelementptr inbounds float, float* %a, i64 1
   %0 = load float, float* %arrayidx, align 4
@@ -372,6 +438,14 @@ define dso_local void @testd(double* nocapture noundef readonly %a) local_unname
 ; RV64I_PAIR-NEXT:    ld a0, 8(a0)
 ; RV64I_PAIR-NEXT:    tail sinkd
 ;
+; RV64I_8500-LABEL: testd:
+; RV64I_8500:       # %bb.0: # %entry
+; RV64I_8500-NEXT:    fld fa0, 8(a0)
+; RV64I_8500-NEXT:    fld fa2, 16(a0)
+; RV64I_8500-NEXT:    fld fa1, 24(a0)
+; RV64I_8500-NEXT:    fld fa3, 0(a0)
+; RV64I_8500-NEXT:    tail sinkd
+;
 ; RV64D_PAIR-LABEL: testd:
 ; RV64D_PAIR:       # %bb.0: # %entry
 ; RV64D_PAIR-NEXT:    fld fa0, 8(a0)
@@ -379,6 +453,14 @@ define dso_local void @testd(double* nocapture noundef readonly %a) local_unname
 ; RV64D_PAIR-NEXT:    fld fa1, 24(a0)
 ; RV64D_PAIR-NEXT:    fld fa3, 0(a0)
 ; RV64D_PAIR-NEXT:    tail sinkd
+;
+; RV64D_8500-LABEL: testd:
+; RV64D_8500:       # %bb.0: # %entry
+; RV64D_8500-NEXT:    fld fa0, 8(a0)
+; RV64D_8500-NEXT:    fld fa1, 24(a0)
+; RV64D_8500-NEXT:    fld fa2, 16(a0)
+; RV64D_8500-NEXT:    fld fa3, 0(a0)
+; RV64D_8500-NEXT:    tail sinkd
 entry:
   %arrayidx = getelementptr inbounds double, double* %a, i64 1
   %0 = load double, double* %arrayidx, align 8
