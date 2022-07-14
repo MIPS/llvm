@@ -6,21 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// Merge the offset of address calculation into the offset field
-// of instructions in a global address lowering sequence. This pass transforms:
-//   lui  vreg1, %hi(s)
-//   addi vreg2, vreg1, %lo(s)
-//   addi vreg3, verg2, Offset
+// Bundle loads and stores that operate on consecutive memory locations to take
+// the advantage of hardware load/store bonding.
 //
-//   Into:
-//   lui  vreg1, %hi(s+Offset)
-//   addi vreg2, vreg1, %lo(s+Offset)
-//
-// The transformation is carried out under certain conditions:
-// 1) The offset field in the base of global address lowering sequence is zero.
-// 2) The lowered global address has only one use.
-//
-// The offset field can be in a different form. This pass handles all of them.
 //===----------------------------------------------------------------------===//
 
 #include "RISCV.h"
@@ -53,12 +41,14 @@ struct RISCVLoadStoreOpt : public MachineFunctionPass {
     MachineFunctionPass::getAnalysisUsage(AU);
   }
 
-  StringRef getPassName() const override {
-    return RISCV_LOAD_STORE_OPT_NAME;
-  }
+  StringRef getPassName() const override { return RISCV_LOAD_STORE_OPT_NAME; }
 
-  // Find and pair ldr/str instructions.
+  // Find and pair load/store instructions.
   bool tryToPairLdStInst(MachineBasicBlock::iterator &MBBI);
+
+  // Convert load/store pairs to single instructions.
+  bool tryConvertToLdStPair(MachineBasicBlock::iterator First,
+                            MachineBasicBlock::iterator Second);
 
   // Scan the instructions looking for a load/store that can be combined
   // with the current instruction into a load/store pair.
@@ -66,9 +56,9 @@ struct RISCVLoadStoreOpt : public MachineFunctionPass {
   MachineBasicBlock::iterator findMatchingInsn(MachineBasicBlock::iterator I,
                                                bool &MergeForward);
 
-  MachineBasicBlock::iterator mergePairedInsns(MachineBasicBlock::iterator I,
-                                               MachineBasicBlock::iterator Paired,
-                                               bool MergeForward);
+  MachineBasicBlock::iterator
+  mergePairedInsns(MachineBasicBlock::iterator I,
+                   MachineBasicBlock::iterator Paired, bool MergeForward);
 
 private:
   AliasAnalysis *AA;
@@ -76,15 +66,13 @@ private:
   const RISCVInstrInfo *TII;
   const RISCVRegisterInfo *TRI;
   LiveRegUnits ModifiedRegUnits, UsedRegUnits;
-
+  bool UseLoadStorePair = false;
 };
 } // end anonymous namespace
 
 char RISCVLoadStoreOpt::ID = 0;
-INITIALIZE_PASS(RISCVLoadStoreOpt, DEBUG_TYPE,
-                RISCV_LOAD_STORE_OPT_NAME, false, false)
-
-
+INITIALIZE_PASS(RISCVLoadStoreOpt, DEBUG_TYPE, RISCV_LOAD_STORE_OPT_NAME, false,
+                false)
 
 bool RISCVLoadStoreOpt::runOnMachineFunction(MachineFunction &Fn) {
   if (skipFunction(Fn.getFunction()))
@@ -101,25 +89,28 @@ bool RISCVLoadStoreOpt::runOnMachineFunction(MachineFunction &Fn) {
   AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
   ModifiedRegUnits.init(*TRI);
   UsedRegUnits.init(*TRI);
+  UseLoadStorePair = Subtarget.hasFeature(RISCV::Proci8500);
 
   for (MachineBasicBlock &MBB : Fn) {
     LLVM_DEBUG(dbgs() << "MBB: " << MBB.getName() << "\n");
 
     for (MachineBasicBlock::iterator MBBI = MBB.begin(), E = MBB.end();
-       MBBI != E;) {
-     if (TII->isPairableLdStInstOpc(MBBI->getOpcode()) && tryToPairLdStInst(MBBI))
-       MadeChange = true;
-     else
-       ++MBBI;
+         MBBI != E;) {
+      if (TII->isPairableLdStInstOpc(MBBI->getOpcode()) &&
+          tryToPairLdStInst(MBBI))
+        MadeChange = true;
+      else
+        ++MBBI;
     }
   }
+
   return MadeChange;
 }
 
-
 // Find loads and stores that can be merged into a single load or store pair
 // instruction.
-bool RISCVLoadStoreOpt::tryToPairLdStInst(MachineBasicBlock::iterator &MBBI) {
+bool
+RISCVLoadStoreOpt::tryToPairLdStInst(MachineBasicBlock::iterator &MBBI) {
   MachineInstr &MI = *MBBI;
   MachineBasicBlock::iterator E = MI.getParent()->end();
 
@@ -134,6 +125,59 @@ bool RISCVLoadStoreOpt::tryToPairLdStInst(MachineBasicBlock::iterator &MBBI) {
     return true;
   }
   return false;
+}
+
+bool RISCVLoadStoreOpt::tryConvertToLdStPair(
+    MachineBasicBlock::iterator First, MachineBasicBlock::iterator Second) {
+  if (!UseLoadStorePair)
+    return false;
+
+  unsigned PairOpc;
+  switch (First->getOpcode()) {
+  default:
+    return false;
+  case RISCV::SW:
+    PairOpc = RISCV::SWP;
+    break;
+  case RISCV::LW:
+    PairOpc = RISCV::LWP;
+    break;
+  case RISCV::SD:
+    PairOpc = RISCV::SDP;
+    break;
+  case RISCV::LD:
+    PairOpc = RISCV::LDP;
+    break;
+  }
+
+  MachineFunction *MF = First->getMF();
+  const MachineMemOperand *MMO = *First->memoperands_begin();
+  Align MMOAlign = MMO->getAlign();
+  if (const PseudoSourceValue *Source = MMO->getPseudoValue())
+    if (Source->kind() == PseudoSourceValue::FixedStack)
+      MMOAlign = MF->getSubtarget().getFrameLowering()->getStackAlign();
+
+  if (MMOAlign < Align(MMO->getSize() * 2))
+    return false;
+  int64_t Offset = First->getOperand(2).getImm();
+  if (!isUInt<7>(Offset) || !isAligned(Align(MMO->getSize()), Offset))
+    return false;
+  MachineInstrBuilder MIB = BuildMI(
+      *MF,
+      First->getDebugLoc().get() ? First->getDebugLoc() : Second->getDebugLoc(),
+      TII->get(PairOpc));
+  MIB.add(First->getOperand(0))
+      .add(Second->getOperand(0))
+      .add(First->getOperand(1))
+      .add(First->getOperand(2))
+      .cloneMergedMemRefs({&*First, &*Second});
+
+  First->getParent()->insert(First, MIB);
+
+  First->removeFromParent();
+  Second->removeFromParent();
+
+  return true;
 }
 
 /// TODO: Move to lambda
@@ -162,7 +206,6 @@ RISCVLoadStoreOpt::findMatchingInsn(MachineBasicBlock::iterator I,
   Register BaseReg = FirstMI.getOperand(1).getReg();
   int Offset = FirstMI.getOperand(2).getImm();
   int OffsetStride = (*FirstMI.memoperands_begin())->getSize();
-
 
   LiveRegUnits UsedInBetween;
   UsedInBetween.init(*TRI);
@@ -195,15 +238,13 @@ RISCVLoadStoreOpt::findMatchingInsn(MachineBasicBlock::iterator I,
 
       if (BaseReg == MIBaseReg) {
 
-          if ((Offset != MIOffset + OffsetStride) &&
-              (Offset + OffsetStride != MIOffset)) {
-            LiveRegUnits::accumulateUsedDefed(MI, ModifiedRegUnits,
-                                              UsedRegUnits, TRI);
-            MemInsns.push_back(&MI);
-            continue;
-          }
-
-        int MinOffset = Offset < MIOffset ? Offset : MIOffset;
+        if ((Offset != MIOffset + OffsetStride) &&
+            (Offset + OffsetStride != MIOffset)) {
+          LiveRegUnits::accumulateUsedDefed(MI, ModifiedRegUnits, UsedRegUnits,
+                                            TRI);
+          MemInsns.push_back(&MI);
+          continue;
+        }
 
         // If the destination register of one load is the same register or a
         // sub/super register of the other load, bail and keep looking.
@@ -270,7 +311,7 @@ RISCVLoadStoreOpt::findMatchingInsn(MachineBasicBlock::iterator I,
   return E;
 }
 
-MachineBasicBlock::iterator
+MachineBasicBlock::iterator __attribute__((noinline))
 RISCVLoadStoreOpt::mergePairedInsns(MachineBasicBlock::iterator I,
                                     MachineBasicBlock::iterator Paired,
                                     bool MergeForward) {
@@ -282,7 +323,7 @@ RISCVLoadStoreOpt::mergePairedInsns(MachineBasicBlock::iterator I,
   // Insert our new paired instruction after whichever of the paired
   // instructions MergeForward indicates.
   MachineBasicBlock::iterator InsertionPoint = MergeForward ? Paired : I;
-  MachineBasicBlock::iterator DeletionPoint =  MergeForward ? I : Paired;
+  MachineBasicBlock::iterator DeletionPoint = MergeForward ? I : Paired;
   int Offset = I->getOperand(2).getImm();
   int PairedOffset = Paired->getOperand(2).getImm();
   bool InsertAfter = (Offset < PairedOffset) ^ MergeForward;
@@ -306,17 +347,21 @@ RISCVLoadStoreOpt::mergePairedInsns(MachineBasicBlock::iterator I,
 
   MachineInstr *ToInsert = DeletionPoint->removeFromParent();
   MachineBasicBlock &MBB = *InsertionPoint->getParent();
+  MachineBasicBlock::iterator First, Second;
 
   if (!InsertAfter) {
-    MachineBasicBlock::iterator PointBefore = MBB.insert(InsertionPoint, ToInsert);
-    finalizeBundle(MBB, PointBefore->getIterator(), (++InsertionPoint)->getIterator());
+    First = MBB.insert(InsertionPoint, ToInsert);
+    Second = InsertionPoint;
   } else {
-    MachineBasicBlock::iterator PointAfter = ++MBB.insertAfter(InsertionPoint, ToInsert);
-    finalizeBundle(MBB, InsertionPoint->getIterator(), PointAfter->getIterator());
+    Second = MBB.insertAfter(InsertionPoint, ToInsert);
+    First = InsertionPoint;
   }
 
-  LLVM_DEBUG(
-      dbgs() << "Bonding pair load/store:\n    ");
+  if (!tryConvertToLdStPair(First, Second))
+    finalizeBundle(MBB, First.getInstrIterator(),
+                   std::next(Second).getInstrIterator());
+
+  LLVM_DEBUG(dbgs() << "Bonding pair load/store:\n    ");
   LLVM_DEBUG(prev_nodbg(NextI, MBB.begin())->print(dbgs()));
   return NextI;
 }

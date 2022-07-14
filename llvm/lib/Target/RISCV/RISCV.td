@@ -443,6 +443,10 @@ def FeatureLoadStorePairs
     : SubtargetFeature<"load-store-pairs", "UseLoadStorePairs", "true",
                        "Optimize for hardware load-store bonding">;
 
+def HasLoadStorePair : Predicate<"Subtarget->hasFeature(RISCV::Proci8500)">,
+                             AssemblerPredicate<(all_of Proci8500),
+                             "load and store pair instructions">;
+
 //===----------------------------------------------------------------------===//
 // Named operands for CSR instructions.
 //===----------------------------------------------------------------------===//
