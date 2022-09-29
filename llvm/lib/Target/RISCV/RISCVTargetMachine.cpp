@@ -73,6 +73,10 @@ static cl::opt<bool> EnableRISCVCopyPropagation(
     "riscv-enable-copy-propagation",
     cl::desc("Enable the copy propagation with RISC-V copy instr"),
     cl::init(true), cl::Hidden);
+static cl::opt<bool>
+    EnableGEPOpt("riscv-enable-gep-opt", cl::Hidden,
+                 cl::desc("Enable optimizations on complex GEPs"),
+                 cl::init(false));
 
 static cl::opt<bool> EnableRISCVDeadRegisterElimination(
     "riscv-enable-dead-defs", cl::Hidden,
@@ -356,12 +360,13 @@ public:
   ScheduleDAGInstrs *
   createMachineScheduler(MachineSchedContext *C) const override {
     ScheduleDAGMILive *DAG = nullptr;
+    const RISCVSubtarget &ST = C->MF->getSubtarget<RISCVSubtarget>();
     if (EnableMISchedLoadClustering) {
       DAG = createGenericSchedLive(C);
       DAG->addMutation(createLoadClusterDAGMutation(
           DAG->TII, DAG->TRI, /*ReorderWhileClustering=*/true));
     }
-    if (ST.hasMacroFusion()) {
+    if (!ST.getMacroFusions().empty()) {
       DAG = DAG ? DAG : createGenericSchedLive(C);
 
       const RISCVSubtarget &ST = C->MF->getSubtarget<RISCVSubtarget>();
@@ -432,7 +437,17 @@ bool RISCVPassConfig::addRegAssignAndRewriteOptimized() {
 void RISCVPassConfig::addIRPasses() {
   addPass(createAtomicExpandLegacyPass());
 
-  if (getOptLevel() != CodeGenOptLevel::None) {
+  if (TM->getOptLevel() == CodeGenOptLevel::Aggressive && EnableGEPOpt) {
+    addPass(createSeparateConstOffsetFromGEPPass(false));
+    // Call EarlyCSE pass to find and remove subexpressions in the lowered
+    // result.
+    addPass(createEarlyCSEPass());
+    // Do loop invariant code motion in case part of the lowered result is
+    // invariant.
+    addPass(createLICMPass());
+  }
+
+  if (getOptLevel() != CodeGenOptLevel::None){
     if (EnableLoopDataPrefetch)
       addPass(createLoopDataPrefetchPass());
 
