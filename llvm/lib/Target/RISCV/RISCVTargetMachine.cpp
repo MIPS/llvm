@@ -30,7 +30,14 @@
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/FormattedStream.h"
 #include "llvm/Target/TargetOptions.h"
+#include "llvm/Transforms/Scalar.h"
+
 using namespace llvm;
+
+static cl::opt<bool>
+    EnableGEPOpt("riscv-enable-gep-opt", cl::Hidden,
+                 cl::desc("Enable optimizations on complex GEPs"),
+                 cl::init(false));
 
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeRISCVTarget() {
   RegisterTargetMachine<RISCVTargetMachine> X(getTheRISCV32Target());
@@ -152,6 +159,16 @@ TargetPassConfig *RISCVTargetMachine::createPassConfig(PassManagerBase &PM) {
 
 void RISCVPassConfig::addIRPasses() {
   addPass(createAtomicExpandPass());
+
+  if (TM->getOptLevel() == CodeGenOpt::Aggressive && EnableGEPOpt) {
+    addPass(createSeparateConstOffsetFromGEPPass(false));
+    // Call EarlyCSE pass to find and remove subexpressions in the lowered
+    // result.
+    addPass(createEarlyCSEPass());
+    // Do loop invariant code motion in case part of the lowered result is
+    // invariant.
+    addPass(createLICMPass());
+  }
 
   addPass(createRISCVGatherScatterLoweringPass());
 
