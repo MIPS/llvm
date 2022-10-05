@@ -2095,6 +2095,13 @@ void Clang::AddRISCVTargetArgs(const ArgList &Args,
     }
   }
 
+  if (Arg *A = Args.getLastArg(options::OPT_mccmov,
+                               options::OPT_mno_ccmov)) {
+    if (A->getOption().matches(options::OPT_mno_ccmov)) {
+      CmdArgs.push_back("-mllvm");
+      CmdArgs.push_back("-riscv-ccmov=0");
+    }
+  }
   // Handle -mrvv-vector-bits=<bits>
   if (Arg *A = Args.getLastArg(options::OPT_mrvv_vector_bits_EQ)) {
     StringRef Val = A->getValue();
