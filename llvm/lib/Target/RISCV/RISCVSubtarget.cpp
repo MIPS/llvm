@@ -66,6 +66,11 @@ static cl::opt<bool> UseLoadStorePairsOpt(
     cl::desc("RISCV: Optimize for load-store bonding"),
     cl::init(true), cl::Hidden);
 
+static cl::opt<bool> UseCustomCMovInsn(
+    "riscv-custom-cmov",
+    cl::desc("RISCV: Use 'ccmov' instruction"),
+    cl::init(true), cl::Hidden);
+
 void RISCVSubtarget::anchor() {}
 
 RISCVSubtarget &
@@ -217,4 +222,8 @@ bool RISCVSubtarget::useRVVForFixedLengthVectors() const {
 
 bool RISCVSubtarget::useLoadStorePairs() const {
   return UseLoadStorePairsOpt && UseLoadStorePairs;
+}
+
+bool RISCVSubtarget::hasCustomCMov() const {
+  return UseCustomCMovInsn && HasCustomCMov;
 }

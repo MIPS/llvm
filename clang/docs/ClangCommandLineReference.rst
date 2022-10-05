@@ -3787,9 +3787,11 @@ RISCV
 -----
 .. option:: -msave-restore, -mno-save-restore
 
+Enable using library calls for save and restore
+
 .. option:: -mload-store-pairs, -mno-load-store-pairs
 
-Enable using library calls for save and restore
+.. option:: -mccmov, -mno-ccmov
 
 Long double flags
 -----------------

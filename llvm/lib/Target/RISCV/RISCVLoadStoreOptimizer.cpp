@@ -78,7 +78,6 @@ bool RISCVLoadStoreOpt::runOnMachineFunction(MachineFunction &Fn) {
   if (skipFunction(Fn.getFunction()))
     return false;
   const RISCVSubtarget &Subtarget = Fn.getSubtarget<RISCVSubtarget>();
-
   if (!Subtarget.useLoadStorePairs())
     return false;
 
@@ -89,7 +88,8 @@ bool RISCVLoadStoreOpt::runOnMachineFunction(MachineFunction &Fn) {
   AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
   ModifiedRegUnits.init(*TRI);
   UsedRegUnits.init(*TRI);
-  UseLoadStorePair = Subtarget.hasFeature(RISCV::Proci8500);
+  UseLoadStorePair = Subtarget.hasFeature(RISCV::Proci8500) ||
+                     Subtarget.hasFeature(RISCV::Procp8700);
 
   for (MachineBasicBlock &MBB : Fn) {
     LLVM_DEBUG(dbgs() << "MBB: " << MBB.getName() << "\n");
