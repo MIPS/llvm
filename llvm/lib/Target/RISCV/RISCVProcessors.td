@@ -279,8 +279,6 @@ def P8700 : RISCVProcessorModel<"p8700",
                                  FeatureStdExtF,
                                  FeatureStdExtD,
                                  FeatureStdExtC,
-                                 FeatureStdExtZba,
-                                 FeatureStdExtZbb,
                                  FeatureCCMov,
                                  FeatureLoadStorePairs],
                                 [Procp8700]>;

@@ -926,12 +926,12 @@ def SRAW  : ALUW_rr<0b0100000, 0b101, "sraw">,
 } // IsSignExtendingOpW = 1
 } // Predicates = [IsRV64]
 
-let Predicates = [HasCCMov], hasSideEffects = 0, mayLoad = 0, mayStore = 0 in {
+let Predicates = [UsesCCMov], hasSideEffects = 0, mayLoad = 0, mayStore = 0 in {
 def CCMOV : RVInstR4<0b11, 0b011, OPC_CUSTOM_0, (outs GPR:$rd),
                     (ins GPR:$rs1, GPR:$rs2, GPR:$rs3),
                     "ccmov", "$rd, $rs2, $rs1, $rs3">,
            Sched<[]>;
-} // Predicates = [HasCCMov]
+} // Predicates = [UsesCCMov]
 
 //===----------------------------------------------------------------------===//
 // Privileged instructions
@@ -2139,7 +2139,7 @@ def : Pat<(binop_allwusers<add> GPR:$rs1, (AddiPair:$rs2)),
 // MIPS extensions
 //===----------------------------------------------------------------------===//
 
-let Predicates = [HasCCMov] in {
+let Predicates = [UsesCCMov] in {
 def : Pat<(select (XLenVT (setne (XLenVT GPR:$rs2), (XLenVT 0))),
                   (XLenVT GPR:$rs1), (XLenVT GPR:$rs3)),
           (CCMOV GPR:$rs1, GPR:$rs2, GPR:$rs3)>;
@@ -2172,10 +2172,9 @@ def : Pat<(select (XLenVT (setle (XLenVT GPR:$y), (XLenVT GPR:$x))),
           (CCMOV GPR:$rs1, (SLT GPR:$x, GPR:$y), GPR:$rs3)>;
 def : Pat<(select (XLenVT GPR:$rs2), (XLenVT GPR:$rs1), (XLenVT GPR:$rs3)),
           (CCMOV GPR:$rs1, GPR:$rs2, GPR:$rs3)>;
-} // Predicates = [HasCCMov]
+} // Predicates = [UsesCCMov]
 
-
-let Predicates = [HasLoadStorePairs], hasSideEffects = 0 in {
+let Predicates = [UsesLoadStorePairs], hasSideEffects = 0 in {
 def LWP : LWPFormat<(outs GPR:$rd1, GPR:$rd2), (ins GPR:$rs1, uimm7_lsb00:$imm7),
                     "lwp", "$rd1, $rd2, ${imm7}(${rs1})">,
                     Sched<[WriteLDW, WriteLDW, ReadMemBase]> {
