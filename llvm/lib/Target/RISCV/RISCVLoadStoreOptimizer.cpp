@@ -93,7 +93,7 @@ bool RISCVLoadStoreOpt::runOnMachineFunction(MachineFunction &Fn) {
   AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
   ModifiedRegUnits.init(*TRI);
   UsedRegUnits.init(*TRI);
-  UseLoadStorePair = Subtarget.hasFeature(RISCV::Proci8500);
+  UseLoadStorePair = Subtarget.useLoadStorePairs();
 
   for (MachineBasicBlock &MBB : Fn) {
     LLVM_DEBUG(dbgs() << "MBB: " << MBB.getName() << "\n");
