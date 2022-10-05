@@ -443,8 +443,8 @@ def FeatureLoadStorePairs
     : SubtargetFeature<"load-store-pairs", "UseLoadStorePairs", "true",
                        "Optimize for hardware load-store bonding">;
 
-def HasLoadStorePair : Predicate<"Subtarget->hasFeature(RISCV::Proci8500)">,
-                             AssemblerPredicate<(all_of Proci8500),
+def HasLoadStorePair : Predicate<"Subtarget->useLoadStorePairs()">,
+                             AssemblerPredicate<(any_of Proci8500, Procp8700),
                              "load and store pair instructions">;
 
 //===----------------------------------------------------------------------===//
@@ -555,8 +555,6 @@ def : ProcessorModel<"i8500", i8500Model, [Feature64Bit,
                                            FeatureStdExtF,
                                            FeatureStdExtD,
                                            FeatureStdExtC,
-                                           FeatureStdExtZba,
-                                           FeatureStdExtZbb,
                                            FeatureCustomCMov,
                                            FeatureLoadStorePairs],
                      [Proci8500]>;
@@ -567,8 +565,6 @@ def : ProcessorModel<"p8700", p8700Model, [Feature64Bit,
                                            FeatureStdExtF,
                                            FeatureStdExtD,
                                            FeatureStdExtC,
-                                           FeatureStdExtZba,
-                                           FeatureStdExtZbb,
                                            FeatureCustomCMov,
                                            FeatureLoadStorePairs],
                     [Procp8700]>;

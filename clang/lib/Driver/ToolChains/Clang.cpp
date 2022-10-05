@@ -2164,6 +2164,14 @@ void Clang::AddRISCVTargetArgs(const ArgList &Args,
       CmdArgs.push_back("-riscv-load-store-pairs=0");
     }
   }
+  if (Arg *A = Args.getLastArg(options::OPT_mccmov,
+                               options::OPT_mno_ccmov)) {
+    if (A->getOption().matches(options::OPT_mno_ccmov)) {
+      CmdArgs.push_back("-mllvm");
+      CmdArgs.push_back("-riscv-custom-cmov=0");
+    }
+  }
+
 }
 
 void Clang::AddSparcTargetArgs(const ArgList &Args,
