@@ -3793,6 +3793,10 @@ Enable using library calls for save and restore
 
 .. option:: -mccmov, -mno-ccmov
 
+Emit nop to remove back-to-back branches
+
+.. option:: -mremove-back-to-back-branches, -mno-remove-back-to-back-branches
+
 Long double flags
 -----------------
 Selects the long double implementation
