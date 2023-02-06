@@ -4646,6 +4646,7 @@ def mload_store_pairs : Flag<["-"], "mload-store-pairs">, Group<m_riscv_Features
 def mno_load_store_pairs : Flag<["-"], "mno-load-store-pairs">, Group<m_riscv_Features_Group>;
 def mccmov : Flag<["-"], "mccmov">, Group<m_riscv_Features_Group>;
 def mno_ccmov : Flag<["-"], "mno-ccmov">, Group<m_riscv_Features_Group>;
+def mremove_back_to_back_branches : Flag<["-"], "mremove_back_to_back_branches">, Group<m_riscv_Features_Group>;
 def mcmodel_EQ_medlow : Flag<["-"], "mcmodel=medlow">, Group<m_riscv_Features_Group>,
   Visibility<[CC1Option]>, Alias<mcmodel_EQ>, AliasArgs<["small"]>,
   HelpText<"Equivalent to -mcmodel=small, compatible with RISC-V gcc.">;
