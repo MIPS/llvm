@@ -110,6 +110,7 @@ public:
   bool hasStdExtZvl() const { return ZvlLen != 0; }
   bool hasStdExtZfhOrZfhmin() const { return HasStdExtZfh || HasStdExtZfhmin; }
   bool is64Bit() const { return HasRV64; }
+  bool shouldRemoveBackToBackBranches() const;
   bool useLoadStorePairs() const;
   bool useCCMovInsn() const;
   MVT getXLenVT() const { return XLenVT; }

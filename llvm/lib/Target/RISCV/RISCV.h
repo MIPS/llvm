@@ -74,6 +74,9 @@ void initializeRISCVRedundantCopyEliminationPass(PassRegistry &);
 FunctionPass *createRISCVLoadStoreOptPass();
 void initializeRISCVLoadStoreOptPass(PassRegistry &);
 
+FunctionPass *createRISCVRemoveBackToBackBranches();
+void initializeRISCVRemoveBackToBackBranchesPass(PassRegistry &);
+
 InstructionSelector *createRISCVInstructionSelector(const RISCVTargetMachine &,
                                                     RISCVSubtarget &,
                                                     RISCVRegisterBankInfo &);
