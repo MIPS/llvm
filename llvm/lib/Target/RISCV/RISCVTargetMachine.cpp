@@ -217,6 +217,8 @@ void RISCVPassConfig::addPreEmitPass() {
     return MF.getSubtarget<RISCVSubtarget>().useLoadStorePairs();
   }));
   addPass(&BranchRelaxationPassID);
+
+  addPass(createRISCVRemoveBackToBackBranches());
 }
 
 void RISCVPassConfig::addPreEmitPass2() {

@@ -197,6 +197,7 @@ public:
   bool enableRVCHintInstrs() const { return EnableRVCHintInstrs; }
   bool enableSaveRestore() const { return EnableSaveRestore; }
   bool hasCustomCMov() const;
+  bool shouldRemoveBackToBackBranches() const;
   bool useLoadStorePairs() const;
   MVT getXLenVT() const { return XLenVT; }
   unsigned getXLen() const { return XLen; }
