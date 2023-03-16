@@ -61,6 +61,16 @@ public:
                       SmallVectorImpl<MCFixup> &Fixups,
                       const MCSubtargetInfo &STI) const;
 
+  /// Replace PseudoEXT with EXT instruction
+  void replacePseudoEXTInst(const MCInst &MI, raw_ostream &OS,
+                            SmallVectorImpl<MCFixup> &Fixups,
+                            const MCSubtargetInfo &STI) const;
+
+  /// Replace PseudoINS with INS instruction
+  void replacePseudoINSInst(const MCInst &MI, raw_ostream &OS,
+                            SmallVectorImpl<MCFixup> &Fixups,
+                            const MCSubtargetInfo &STI) const;
+
   /// TableGen'erated function for getting the binary encoding for an
   /// instruction.
   uint64_t getBinaryCodeForInstr(const MCInst &MI,
@@ -179,6 +189,50 @@ void RISCVMCCodeEmitter::expandAddTPRel(const MCInst &MI, raw_ostream &OS,
   support::endian::write(OS, Binary, support::little);
 }
 
+void RISCVMCCodeEmitter::replacePseudoEXTInst(const MCInst &MI, raw_ostream &OS,
+                                        SmallVectorImpl<MCFixup> &Fixups,
+                                        const MCSubtargetInfo &STI) const {
+  const MCOperand& RetReg = MI.getOperand(0);
+  const MCOperand& SrcReg = MI.getOperand(1);
+  const MCOperand& Pos = MI.getOperand(2);
+  const MCOperand& Size = MI.getOperand(3);
+
+  unsigned Lsb = ~Pos.getImm() & 0b111111;
+  unsigned Msbd = Size.getImm() - 1;
+
+  // Emit a normal ADD instruction with the given operands.
+  MCInst TmpInst = MCInstBuilder(RISCV::EXT)
+                       .addOperand(RetReg)
+                       .addOperand(SrcReg)
+                       .addOperand(MCOperand::createImm(Lsb))
+                       .addOperand(MCOperand::createImm(Msbd));
+  uint32_t Binary = getBinaryCodeForInstr(TmpInst, Fixups, STI);
+  support::endian::write(OS, Binary, support::little);
+}
+
+void RISCVMCCodeEmitter::replacePseudoINSInst(const MCInst &MI, raw_ostream &OS,
+                                        SmallVectorImpl<MCFixup> &Fixups,
+                                        const MCSubtargetInfo &STI) const {
+  const MCOperand& RetReg = MI.getOperand(0);
+  const MCOperand& DistReg = MI.getOperand(1);
+  const MCOperand& SrcReg = MI.getOperand(2);
+  const MCOperand& Pos = MI.getOperand(3);
+  const MCOperand& Size = MI.getOperand(4);
+
+  unsigned Lsb = Pos.getImm();
+  unsigned Msbd = Size.getImm() + Lsb - 1;
+
+  // Emit a normal ADD instruction with the given operands.
+  MCInst TmpInst = MCInstBuilder(RISCV::INS)
+                       .addOperand(RetReg)
+                       .addOperand(DistReg)
+                       .addOperand(SrcReg)
+                       .addOperand(MCOperand::createImm(Lsb))
+                       .addOperand(MCOperand::createImm(Msbd));
+  uint32_t Binary = getBinaryCodeForInstr(TmpInst, Fixups, STI);
+  support::endian::write(OS, Binary, support::little);
+}
+
 void RISCVMCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,
                                            SmallVectorImpl<MCFixup> &Fixups,
                                            const MCSubtargetInfo &STI) const {
@@ -200,6 +254,18 @@ void RISCVMCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,
 
   if (MI.getOpcode() == RISCV::PseudoAddTPRel) {
     expandAddTPRel(MI, OS, Fixups, STI);
+    MCNumEmitted += 1;
+    return;
+  }
+
+  if (MI.getOpcode() == RISCV::PseudoEXT) {
+    replacePseudoEXTInst(MI, OS, Fixups, STI);
+    MCNumEmitted += 1;
+    return;
+  }
+
+  if (MI.getOpcode() == RISCV::PseudoINS) {
+    replacePseudoINSInst(MI, OS, Fixups, STI);
     MCNumEmitted += 1;
     return;
   }
