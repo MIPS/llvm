@@ -168,6 +168,8 @@ public:
     return is64Bit() ? 64 : 32;
   }  
   bool shouldRemoveBackToBackBranches() const;
+  bool shouldUseExt() const;
+  bool shouldUseIns() const;
   bool useLoadStorePairs() const;
   bool useCCMovInsn() const;
   unsigned getFLen() const {

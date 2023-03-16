@@ -234,6 +234,8 @@ def I8500 : RISCVProcessorModel<"i8500",
                                  FeatureStdExtD,
                                  FeatureStdExtC,
                                  FeatureCCMov,
+                                 FeatureExt,
+                                 FeatureIns,
                                  FeatureLoadStorePairs],
                                 [Proci8500]>;
 
@@ -277,6 +279,8 @@ def P8700 : RISCVProcessorModel<"p8700",
                                  FeatureStdExtD,
                                  FeatureStdExtC,
                                  FeatureCCMov,
+                                 FeatureExt,
+                                 FeatureIns,
                                  FeatureLoadStorePairs],
                                 [Procp8700]>;
 

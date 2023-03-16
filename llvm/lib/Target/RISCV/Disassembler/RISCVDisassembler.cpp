@@ -373,6 +373,9 @@ static DecodeStatus decodeZcmpSpimm(MCInst &Inst, unsigned Imm,
 static DecodeStatus decodeCSSPushPopchk(MCInst &Inst, uint32_t Insn,
                                         uint64_t Address,
                                         const MCDisassembler *Decoder);
+static DecodeStatus decodeBitfieldInstr(MCInst &Inst, unsigned Insn,
+                                        uint64_t Address,
+                                        const MCDisassembler *Decoder);
 
 #include "RISCVGenDisassemblerTables.inc"
 
@@ -441,6 +444,36 @@ static DecodeStatus decodeRVCInstrRdRs1Rs2(MCInst &Inst, uint32_t Insn,
   DecodeGPRRegisterClass(Inst, Rd, Address, Decoder);
   Inst.addOperand(Inst.getOperand(0));
   DecodeGPRRegisterClass(Inst, Rs2, Address, Decoder);
+  return MCDisassembler::Success;
+}
+
+static DecodeStatus decodeBitfieldInstr(MCInst &Inst, unsigned Insn,
+                                        uint64_t Address,
+                                        const MCDisassembler *Decoder) {
+  unsigned Rs = fieldFromInstruction(Insn, 15, 5);
+  unsigned Rd = fieldFromInstruction(Insn, 20, 5);
+  unsigned Msbd = fieldFromInstruction(Insn, 26, 6);
+  unsigned Lsb = fieldFromInstruction(Insn, 7, 5) |
+                 (fieldFromInstruction(Insn, 25, 1) << 5);
+
+  unsigned Pos, Size;
+
+  if (Lsb <= Msbd) {
+    Inst.setOpcode(RISCV::PseudoINS);
+    Pos = Lsb;
+    Size = Msbd - Lsb + 1;
+    DecodeGPRRegisterClass(Inst, Rd, Address, Decoder);
+  } else {
+    Inst.setOpcode(RISCV::PseudoEXT);
+    Pos = ~Lsb & 0b111111;
+    Size = Msbd + 1;
+  }
+
+  DecodeGPRRegisterClass(Inst, Rd, Address, Decoder);
+  DecodeGPRRegisterClass(Inst, Rs, Address, Decoder);
+
+  Inst.addOperand(MCOperand::createImm(Pos));
+  Inst.addOperand(MCOperand::createImm(Size));
   return MCDisassembler::Success;
 }
 

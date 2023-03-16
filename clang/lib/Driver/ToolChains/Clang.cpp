@@ -2102,6 +2102,16 @@ void Clang::AddRISCVTargetArgs(const ArgList &Args,
       CmdArgs.push_back("-riscv-ccmov=0");
     }
   }
+  if (Args.getLastArg(options::OPT_mext)) {
+    CmdArgs.push_back("-mllvm");
+    CmdArgs.push_back("-riscv-ext=1");
+  }
+
+  if (Args.getLastArg(options::OPT_mins)) {
+    CmdArgs.push_back("-mllvm");
+    CmdArgs.push_back("-riscv-ins=1");
+  }
+
   if (Args.getLastArg(options::OPT_mremove_back_to_back_branches)) {
     CmdArgs.push_back("-mllvm");
     CmdArgs.push_back("-riscv-remove-back-to-back-branches=1");

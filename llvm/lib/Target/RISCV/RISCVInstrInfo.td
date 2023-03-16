@@ -44,6 +44,13 @@ def SDT_RISCVIntBinOpW : SDTypeProfile<1, 2, [
 def SDT_RISCVIntShiftDOpW : SDTypeProfile<1, 3, [
   SDTCisSameAs<0, 1>, SDTCisSameAs<0, 2>, SDTCisVT<0, i64>, SDTCisVT<3, i64>
 ]>;
+def SDT_RISCVExt : SDTypeProfile<1, 3, [
+  SDTCisInt<0>, SDTCisSameAs<0, 1>, SDTCisVT<2, XLenVT>, SDTCisSameAs<2, 3>
+]>;
+def SDT_RISCVIns : SDTypeProfile<1, 4, [
+  SDTCisInt<0>, SDTCisSameAs<0, 1>, SDTCisVT<2, XLenVT>, SDTCisSameAs<2, 3>,
+  SDTCisSameAs<0, 4>
+]>;
 
 // Target-independent nodes, but with target-specific formats.
 def callseq_start : SDNode<"ISD::CALLSEQ_START", SDT_CallSeqStart,
@@ -90,6 +97,8 @@ def riscv_add_tprel : SDNode<"RISCVISD::ADD_TPREL",
                                                   SDTCisSameAs<0, 3>,
                                                   SDTCisInt<0>]>>;
 
+def riscv_ext : SDNode<"RISCVISD::EXT", SDT_RISCVExt>;
+def riscv_ins : SDNode<"RISCVISD::INS", SDT_RISCVIns>;
 //===----------------------------------------------------------------------===//
 // Operand and SDNode transformation definitions.
 //===----------------------------------------------------------------------===//
@@ -2204,6 +2213,48 @@ let mayStore = 1;
 }
 }
 
+let Predicates = [UsesExt], hasSideEffects = 0 in {
+def PseudoEXT : Pseudo<(outs GPR:$rt),
+                       (ins GPR:$rs, uimm6:$pos, uimm6:$size), [],
+                       "ext", "$rt, $rs, $pos, $size"> {
+let mayLoad = 0;
+let mayStore = 0;
+}
+
+def EXT : RVInstExtIns<(outs GPR:$rt),
+                       (ins GPR:$rs, uimm6:$lsb, uimm6:$msbd),
+                       "ext_mc", "$rt, $rs, $lsb, $msbd"> {
+let mayLoad = 0;
+let mayStore = 0;
+let DecoderNamespace = "DecodeEXT";
+}
+}
+
+let Predicates = [UsesIns], hasSideEffects = 0 in {
+def PseudoINS : Pseudo<(outs GPR:$rt),
+                       (ins GPR:$rd, GPR:$rs, uimm6:$pos, uimm6:$size), [],
+                       "ins", "$rd, $rs, $pos, $size"> {
+let mayLoad = 0;
+let mayStore = 0;
+}
+
+def INS : RVInstExtIns<(outs GPR:$rt),
+                       (ins GPR:$rd, GPR:$rs, uimm6:$lsb, uimm6:$msbd),
+                       "ins_mc", "$rd, $rs, $lsb, $msbd"> {
+let mayLoad = 0;
+let mayStore = 0;
+}
+}
+
+let Predicates = [UsesExt] in {
+def : Pat<(riscv_ext (XLenVT GPR:$rs), uimm6:$pos, uimm6:$size),
+          (PseudoEXT (XLenVT GPR:$rs), uimm6:$pos, uimm6:$size)>;
+}
+
+let Predicates = [UsesIns] in {
+def : Pat<(riscv_ins GPR:$rd, GPR:$rs, uimm6:$pos, uimm6:$size),
+          (PseudoINS GPR:$rd, GPR:$rs, uimm6:$pos, uimm6:$size)>;
+}
 //===----------------------------------------------------------------------===//
 // Standard extensions
 //===----------------------------------------------------------------------===//

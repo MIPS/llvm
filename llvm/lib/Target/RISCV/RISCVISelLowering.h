@@ -391,6 +391,9 @@ enum NodeType : unsigned {
   // defined in Zicond or XVentanaCondOps.
   CZERO_EQZ, // vt.maskc for XVentanaCondOps.
   CZERO_NEZ, // vt.maskcn for XVentanaCondOps.
+  // MIPS extensions
+  EXT,
+  INS,
 
   // FP to 32 bit int conversions for RV64. These are used to keep track of the
   // result being sign extended to 64 bit. These saturate out of range inputs.

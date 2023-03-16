@@ -598,3 +598,26 @@ class DirectiveInsnJ<dag outs, dag ins, string argstr>
 
   let AsmString = ".insn j " # argstr;
 }
+
+//===----------------------------------------------------------------------===//
+// MIPS Instruction classes
+//===----------------------------------------------------------------------===//
+
+class RVInstExtIns<dag outs, dag ins, string opcodestr, string argstr>
+    : RVInst<outs, ins, opcodestr, argstr, [], InstFormatOther> {
+  bits<5> rt;
+  bits<5> rs;
+  bits<6> lsb;
+  bits<6> msbd;
+
+  let Inst{31-26} = msbd;
+  let Inst{25} = lsb{5};
+  let Inst{24-20} = rt;
+  let Inst{19-15} = rs;
+  let Inst{14-12} = 0b001;
+  let Inst{11-7} = lsb{4-0};
+  let Inst{6-0} = 0b0001011;
+
+  // let isCodeGenOnly = false;
+  let DecoderMethod = "decodeBitfieldInstr";
+}

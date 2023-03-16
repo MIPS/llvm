@@ -80,6 +80,16 @@ static cl::opt<bool> RISCVRemoveBackToBackBranches(
     cl::desc("RISCV: Insert nops to clear pipeline hazards."),
     cl::init(false), cl::Hidden);
 
+static cl::opt<bool> UseExtInsn(
+    "riscv-ext",
+    cl::desc("RISCV: Use 'ext' instruction"),
+    cl::init(false), cl::Hidden);
+
+static cl::opt<bool> UseInsInsn(
+    "riscv-ins",
+    cl::desc("RISCV: Use 'ins' instruction"),
+    cl::init(false), cl::Hidden);
+
 void RISCVSubtarget::anchor() {}
 
 RISCVSubtarget &
@@ -230,4 +240,12 @@ bool RISCVSubtarget::useCCMovInsn() const {
 bool RISCVSubtarget::shouldRemoveBackToBackBranches() const {
   return RISCVRemoveBackToBackBranches &&
     (hasFeature(RISCV::Proci8500) || hasFeature(RISCV::Procp8700));
+}
+
+bool RISCVSubtarget::shouldUseExt() const {
+  return UseExtInsn && HasExt;
+}
+
+bool RISCVSubtarget::shouldUseIns() const {
+  return UseInsInsn && HasIns;
 }
