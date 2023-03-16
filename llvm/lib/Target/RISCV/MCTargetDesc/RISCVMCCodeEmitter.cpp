@@ -64,6 +64,15 @@ public:
   void expandLongCondBr(const MCInst &MI, SmallVectorImpl<char> &CB,
                         SmallVectorImpl<MCFixup> &Fixups,
                         const MCSubtargetInfo &STI) const;
+  /// Replace PseudoEXT with EXT instruction
+  void replacePseudoEXTInst(const MCInst &MI, SmallVectorImpl<char> &CB,
+                            SmallVectorImpl<MCFixup> &Fixups,
+                            const MCSubtargetInfo &STI) const;
+
+  /// Replace PseudoINS with INS instruction
+  void replacePseudoINSInst(const MCInst &MI, SmallVectorImpl<char> &CB,
+                            SmallVectorImpl<MCFixup> &Fixups,
+                            const MCSubtargetInfo &STI) const;
 
   /// TableGen'erated function for getting the binary encoding for an
   /// instruction.
@@ -264,6 +273,49 @@ void RISCVMCCodeEmitter::expandLongCondBr(const MCInst &MI,
                                      MI.getLoc()));
   }
 }
+void RISCVMCCodeEmitter::replacePseudoEXTInst(
+    const MCInst &MI, SmallVectorImpl<char> &CB,
+    SmallVectorImpl<MCFixup> &Fixups, const MCSubtargetInfo &STI) const {
+  const MCOperand &RetReg = MI.getOperand(0);
+  const MCOperand &SrcReg = MI.getOperand(1);
+  const MCOperand &Pos = MI.getOperand(2);
+  const MCOperand &Size = MI.getOperand(3);
+
+  unsigned Lsb = ~Pos.getImm() & 0b111111;
+  unsigned Msbd = Size.getImm() - 1;
+
+  // Emit a normal ADD instruction with the given operands.
+  MCInst TmpInst = MCInstBuilder(RISCV::EXT)
+                       .addOperand(RetReg)
+                       .addOperand(SrcReg)
+                       .addOperand(MCOperand::createImm(Lsb))
+                       .addOperand(MCOperand::createImm(Msbd));
+  uint32_t Binary = getBinaryCodeForInstr(TmpInst, Fixups, STI);
+  support::endian::write(CB, Binary, support::little);
+}
+
+void RISCVMCCodeEmitter::replacePseudoINSInst(
+    const MCInst &MI, SmallVectorImpl<char> &CB,
+    SmallVectorImpl<MCFixup> &Fixups, const MCSubtargetInfo &STI) const {
+  const MCOperand &RetReg = MI.getOperand(0);
+  const MCOperand &DistReg = MI.getOperand(1);
+  const MCOperand &SrcReg = MI.getOperand(2);
+  const MCOperand &Pos = MI.getOperand(3);
+  const MCOperand &Size = MI.getOperand(4);
+
+  unsigned Lsb = Pos.getImm();
+  unsigned Msbd = Size.getImm() + Lsb - 1;
+
+  // Emit a normal ADD instruction with the given operands.
+  MCInst TmpInst = MCInstBuilder(RISCV::INS)
+                       .addOperand(RetReg)
+                       .addOperand(DistReg)
+                       .addOperand(SrcReg)
+                       .addOperand(MCOperand::createImm(Lsb))
+                       .addOperand(MCOperand::createImm(Msbd));
+  uint32_t Binary = getBinaryCodeForInstr(TmpInst, Fixups, STI);
+  support::endian::write(CB, Binary, support::little);
+}
 
 void RISCVMCCodeEmitter::encodeInstruction(const MCInst &MI,
                                            SmallVectorImpl<char> &CB,
@@ -298,6 +350,18 @@ void RISCVMCCodeEmitter::encodeInstruction(const MCInst &MI,
   case RISCV::PseudoLongBGEU:
     expandLongCondBr(MI, CB, Fixups, STI);
     MCNumEmitted += 2;
+    return;
+  }
+
+  if (MI.getOpcode() == RISCV::PseudoEXT) {
+    replacePseudoEXTInst(MI, CB, Fixups, STI);
+    MCNumEmitted += 1;
+    return;
+  }
+
+  if (MI.getOpcode() == RISCV::PseudoINS) {
+    replacePseudoINSInst(MI, CB, Fixups, STI);
+    MCNumEmitted += 1;
     return;
   }
 
@@ -362,8 +426,7 @@ unsigned RISCVMCCodeEmitter::getImmOpValue(const MCInst &MI, unsigned OpNo,
   if (MO.isImm())
     return MO.getImm();
 
-  assert(MO.isExpr() &&
-         "getImmOpValue expects only expressions or immediates");
+  assert(MO.isExpr() && "getImmOpValue expects only expressions or immediates");
   const MCExpr *Expr = MO.getExpr();
   MCExpr::ExprKind Kind = Expr->getKind();
   RISCV::Fixups FixupKind = RISCV::fixup_riscv_invalid;
@@ -443,7 +506,8 @@ unsigned RISCVMCCodeEmitter::getImmOpValue(const MCInst &MI, unsigned OpNo,
       break;
     }
   } else if (Kind == MCExpr::SymbolRef &&
-             cast<MCSymbolRefExpr>(Expr)->getKind() == MCSymbolRefExpr::VK_None) {
+             cast<MCSymbolRefExpr>(Expr)->getKind() ==
+                 MCSymbolRefExpr::VK_None) {
     if (MIFrm == RISCVII::InstFormatJ) {
       FixupKind = RISCV::fixup_riscv_jal;
     } else if (MIFrm == RISCVII::InstFormatB) {
@@ -468,9 +532,8 @@ unsigned RISCVMCCodeEmitter::getImmOpValue(const MCInst &MI, unsigned OpNo,
   // relaxed.
   if (EnableRelax && RelaxCandidate) {
     const MCConstantExpr *Dummy = MCConstantExpr::create(0, Ctx);
-    Fixups.push_back(
-    MCFixup::create(0, Dummy, MCFixupKind(RISCV::fixup_riscv_relax),
-                    MI.getLoc()));
+    Fixups.push_back(MCFixup::create(
+        0, Dummy, MCFixupKind(RISCV::fixup_riscv_relax), MI.getLoc()));
     ++MCNumFixups;
   }
 
