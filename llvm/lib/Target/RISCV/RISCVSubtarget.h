@@ -101,6 +101,8 @@ private:
   bool HasStdExtZkt = false;
   bool HasStdExtZk = false;
   bool HasCustomCMov = false;
+  bool HasExt = false;
+  bool HasIns = false;
   bool HasRV64 = false;
   bool IsRV32E = false;
   bool EnableLinkerRelax = false;
@@ -198,6 +200,8 @@ public:
   bool enableSaveRestore() const { return EnableSaveRestore; }
   bool hasCustomCMov() const;
   bool shouldRemoveBackToBackBranches() const;
+  bool shouldUseExt() const;
+  bool shouldUseIns() const;
   bool useLoadStorePairs() const;
   MVT getXLenVT() const { return XLenVT; }
   unsigned getXLen() const { return XLen; }

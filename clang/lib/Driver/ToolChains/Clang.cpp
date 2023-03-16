@@ -2172,6 +2172,30 @@ void Clang::AddRISCVTargetArgs(const ArgList &Args,
     }
   }
 
+  if (Arg *A = Args.getLastArg(options::OPT_mext,
+                               options::OPT_mno_ext)) {
+    if (A->getOption().matches(options::OPT_mext)) {
+      CmdArgs.push_back("-mllvm");
+      CmdArgs.push_back("-riscv-ext=1");
+    }
+    if (A->getOption().matches(options::OPT_mno_ext)) {
+      CmdArgs.push_back("-mllvm");
+      CmdArgs.push_back("-riscv-ext=0");
+    }
+  }
+
+  if (Arg *A = Args.getLastArg(options::OPT_mins,
+                               options::OPT_mno_ins)) {
+    if (A->getOption().matches(options::OPT_mins)) {
+      CmdArgs.push_back("-mllvm");
+      CmdArgs.push_back("-riscv-ins=1");
+    }
+    if (A->getOption().matches(options::OPT_mno_ins)) {
+      CmdArgs.push_back("-mllvm");
+      CmdArgs.push_back("-riscv-ins=0");
+    }
+  }
+
   if (Arg *A = Args.getLastArg(options::OPT_mremove_back_to_back_branches,
                                options::OPT_mno_remove_back_to_back_branches)) {
     if (A->getOption().matches(options::OPT_mremove_back_to_back_branches)) {

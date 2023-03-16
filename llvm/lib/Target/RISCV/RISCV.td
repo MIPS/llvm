@@ -439,6 +439,20 @@ def HasStdExtZbtOrCustomCMov : Predicate<"Subtarget->hasStdExtZbt() || Subtarget
                              AssemblerPredicate<(any_of FeatureStdExtZbt, FeatureCustomCMov),
                              "'Zbt' (Ternary 'Zb' Instructions) or 'ccmov' instruction">;
 
+def FeatureExt : SubtargetFeature<"ext", "HasExt",
+                                  "true", "Using ext instruction">;
+
+def UsesExt : Predicate<"Subtarget->shouldUseExt()">,
+                   AssemblerPredicate<(all_of FeatureExt),
+                                      "'ext' instruction">;
+
+def FeatureIns : SubtargetFeature<"ins", "HasIns",
+                                  "true", "Using ins instruction">;
+
+def UsesIns : Predicate<"Subtarget->shouldUseIns()">,
+                   AssemblerPredicate<(all_of FeatureIns),
+                                      "'ins' instruction">;
+
 def FeatureLoadStorePairs
     : SubtargetFeature<"load-store-pairs", "UseLoadStorePairs", "true",
                        "Optimize for hardware load-store bonding">;
@@ -556,6 +570,8 @@ def : ProcessorModel<"i8500", i8500Model, [Feature64Bit,
                                            FeatureStdExtD,
                                            FeatureStdExtC,
                                            FeatureCustomCMov,
+                                           FeatureExt,
+                                           FeatureIns,
                                            FeatureLoadStorePairs],
                      [Proci8500]>;
 
@@ -566,6 +582,8 @@ def : ProcessorModel<"p8700", p8700Model, [Feature64Bit,
                                            FeatureStdExtD,
                                            FeatureStdExtC,
                                            FeatureCustomCMov,
+                                           FeatureExt,
+                                           FeatureIns,
                                            FeatureLoadStorePairs],
                     [Procp8700]>;
 
