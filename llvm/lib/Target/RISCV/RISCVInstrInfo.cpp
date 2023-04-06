@@ -1064,6 +1064,9 @@ bool RISCVInstrInfo::verifyInstruction(const MachineInstr &MI,
         case RISCVOp::OPERAND_UIMM5:
           Ok = isUInt<5>(Imm);
           break;
+        case RISCVOp::OPERAND_UIMM6:
+          Ok = isUInt<6>(Imm);
+          break;
         case RISCVOp::OPERAND_UIMM7:
           Ok = isUInt<7>(Imm);
           break;
