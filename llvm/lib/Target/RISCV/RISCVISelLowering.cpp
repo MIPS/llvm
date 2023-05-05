@@ -7860,6 +7860,40 @@ static SDValue performFP_TO_INT_SATCombine(SDNode *N,
   return DAG.getSelectCC(DL, Src, Src, ZeroInt, FpToInt, ISD::CondCode::SETUO);
 }
 
+static SDValue foldSelectofCTTZ(SDNode *N, SelectionDAG &DAG) {
+  if (N->getNumOperands() != 5)
+    return SDValue();
+
+  SDValue CTTZ = N->getOperand(4);
+  if (!CTTZ.getNumOperands())
+    return SDValue();
+
+  if (CTTZ.getOpcode() != ISD::CTTZ && CTTZ.getOpcode() != RISCVISD::CTZW)
+    return SDValue();
+
+  //  The `true` branch should be constant `0`.
+  SDValue TrueV = N->getOperand(3);
+  if (!isNullConstant(TrueV))
+    return SDValue();
+
+  assert((CTTZ.getValueType() == MVT::i32 || CTTZ.getValueType() == MVT::i64) &&
+         "Illegal type in CTTZ folding");
+
+  ISD::CondCode CCVal = cast<CondCodeSDNode>(N->getOperand(2))->get();
+  SDValue LHS = N->getOperand(0);
+  SDValue CTTZArgument = CTTZ->getOperand(0);
+  SDValue Zero = N->getOperand(1);
+  if (!isNullConstant(Zero) || !ISD::isIntEqualitySetCC(CCVal) ||
+      LHS != CTTZArgument)
+    return SDValue();
+
+  unsigned BitWidth = CTTZ.getValueSizeInBits();
+  SDValue BitWidthMinusOne =
+      DAG.getConstant(BitWidth - 1, SDLoc(N), CTTZ.getValueType());
+  return DAG.getNode(ISD::AND, SDLoc(N), CTTZ.getValueType(), CTTZ,
+                     BitWidthMinusOne);
+}
+
 SDValue RISCVTargetLowering::PerformDAGCombine(SDNode *N,
                                                DAGCombinerInfo &DCI) const {
   SelectionDAG &DAG = DCI.DAG;
@@ -8062,6 +8096,9 @@ SDValue RISCVTargetLowering::PerformDAGCombine(SDNode *N,
     }
     return SDValue();
   case RISCVISD::SELECT_CC: {
+    if (SDValue Folded = foldSelectofCTTZ(N, DAG))
+      return Folded;
+
     // Transform
     SDValue LHS = N->getOperand(0);
     SDValue RHS = N->getOperand(1);
