@@ -2089,9 +2089,9 @@ void Clang::AddRISCVTargetArgs(const ArgList &Args,
   
   if (Arg *A = Args.getLastArg(options::OPT_mload_store_pairs,
                                options::OPT_mno_load_store_pairs)) {
-    if (A->getOption().matches(options::OPT_mno_load_store_pairs)) {
+    if (A->getOption().matches(options::OPT_mload_store_pairs)) {
       CmdArgs.push_back("-mllvm");
-      CmdArgs.push_back("-riscv-load-store-pairs=0");
+      CmdArgs.push_back("-riscv-load-store-pairs=1");
     }
   }
 
