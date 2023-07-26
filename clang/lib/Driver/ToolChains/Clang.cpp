@@ -2166,9 +2166,9 @@ void Clang::AddRISCVTargetArgs(const ArgList &Args,
 
   if (Arg *A = Args.getLastArg(options::OPT_mload_store_pairs,
                                options::OPT_mno_load_store_pairs)) {
-    if (A->getOption().matches(options::OPT_mno_load_store_pairs)) {
+    if (A->getOption().matches(options::OPT_mload_store_pairs)) {
       CmdArgs.push_back("-mllvm");
-      CmdArgs.push_back("-riscv-load-store-pairs=0");
+      CmdArgs.push_back("-riscv-load-store-pairs=1");
     }
   }
 
@@ -2184,20 +2184,12 @@ void Clang::AddRISCVTargetArgs(const ArgList &Args,
       CmdArgs.push_back("-mllvm");
       CmdArgs.push_back("-riscv-ext=1");
     }
-    if (A->getOption().matches(options::OPT_mno_ext)) {
-      CmdArgs.push_back("-mllvm");
-      CmdArgs.push_back("-riscv-ext=0");
-    }
   }
 
   if (Arg *A = Args.getLastArg(options::OPT_mins, options::OPT_mno_ins)) {
     if (A->getOption().matches(options::OPT_mins)) {
       CmdArgs.push_back("-mllvm");
       CmdArgs.push_back("-riscv-ins=1");
-    }
-    if (A->getOption().matches(options::OPT_mno_ins)) {
-      CmdArgs.push_back("-mllvm");
-      CmdArgs.push_back("-riscv-ins=0");
     }
   }
 
@@ -2206,10 +2198,6 @@ void Clang::AddRISCVTargetArgs(const ArgList &Args,
     if (A->getOption().matches(options::OPT_mremove_back_to_back_branches)) {
       CmdArgs.push_back("-mllvm");
       CmdArgs.push_back("-riscv-remove-back-to-back-branches=1");
-    }
-    if (A->getOption().matches(options::OPT_mno_remove_back_to_back_branches)) {
-      CmdArgs.push_back("-mllvm");
-      CmdArgs.push_back("-riscv-remove-back-to-back-branches=0");
     }
   }
   // Handle -mrvv-vector-bits=<bits>

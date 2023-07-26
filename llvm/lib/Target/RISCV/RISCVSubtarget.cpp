@@ -51,7 +51,7 @@ static cl::opt<unsigned> RISCVMaxBuildIntsCost(
 static cl::opt<bool> UseLoadStorePairsOpt(
     "riscv-load-store-pairs",
     cl::desc("RISCV: Optimize for load-store bonding"),
-    cl::init(true), cl::Hidden);
+    cl::init(false), cl::Hidden);
 
 static cl::opt<bool> UseCCMovInsn(
     "riscv-ccmov",
