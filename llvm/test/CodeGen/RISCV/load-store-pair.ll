@@ -7,15 +7,15 @@
 ; RUN:   | FileCheck %s -check-prefix=RV64I
 ; RUN: llc -mtriple=riscv64 -target-abi lp64d -mattr=+d -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s -check-prefix=RV64D
-; RUN: llc -mtriple=riscv32 -mattr=+load-store-pairs -verify-machineinstrs < %s \
+; RUN: llc -mtriple=riscv32 -mattr=+load-store-pairs -riscv-load-store-pairs=1 -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s -check-prefix=RV32I_PAIR
-; RUN: llc -mtriple=riscv32 -target-abi ilp32d -mattr=+d,+load-store-pairs -verify-machineinstrs < %s \
+; RUN: llc -mtriple=riscv32 -target-abi ilp32d -mattr=+d,+load-store-pairs -riscv-load-store-pairs=1 -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s -check-prefix=RV32D_PAIR
-; RUN: llc -mtriple=riscv64 -mattr=+load-store-pairs -verify-machineinstrs < %s \
+; RUN: llc -mtriple=riscv64 -mattr=+load-store-pairs -riscv-load-store-pairs=1 -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s -check-prefix=RV64I_PAIR
-; RUN: llc -mtriple=riscv64 -mcpu i8500 -verify-machineinstrs < %s \
+; RUN: llc -mtriple=riscv64 -mcpu i8500 -mattr=+load-store-pairs -riscv-load-store-pairs=1 -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s -check-prefix=RV64I_8500
-; RUN: llc -mtriple=riscv64 -target-abi lp64d -mattr=+d,+load-store-pairs -verify-machineinstrs < %s \
+; RUN: llc -mtriple=riscv64 -target-abi lp64d -mattr=+d,+load-store-pairs -riscv-load-store-pairs=1 -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s -check-prefix=RV64D_PAIR
 ; RUN: llc -mtriple=riscv64 -target-abi lp64d -mattr=+d -verify-machineinstrs < %s \
 ; RUN:   | FileCheck %s -check-prefix=RV64D_8500
