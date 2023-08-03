@@ -253,5 +253,5 @@ bool RISCVSubtarget::shouldUseExt() const {
 }
 
 bool RISCVSubtarget::shouldUseIns() const {
-  return UseInsInsn && HasExt;
+  return UseInsInsn && HasIns;
 }
