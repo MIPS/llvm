@@ -2158,14 +2158,26 @@ void Clang::AddRISCVTargetArgs(const ArgList &Args,
   }
 
   if (Arg *A = Args.getLastArg(options::OPT_mload_store_pairs,
-                               options::OPT_mno_load_store_pairs)) {
-    if (A->getOption().matches(options::OPT_mno_load_store_pairs)) {
+                               options::OPT_mno_load_store_pairs,
+                               options::OPT_mload_store_bonding,
+                               options::OPT_mno_load_store_bonding)) {
+    if (A->getOption().matches(options::OPT_mload_store_pairs) ||
+        A->getOption().matches(options::OPT_mload_store_bonding)) {
+      CmdArgs.push_back("-mllvm");
+      CmdArgs.push_back("-riscv-load-store-pairs=1");
+    }
+    if (A->getOption().matches(options::OPT_mno_load_store_pairs) ||
+        A->getOption().matches(options::OPT_mno_load_store_bonding)) {
       CmdArgs.push_back("-mllvm");
       CmdArgs.push_back("-riscv-load-store-pairs=0");
     }
   }
   if (Arg *A = Args.getLastArg(options::OPT_mccmov,
                                options::OPT_mno_ccmov)) {
+    if (A->getOption().matches(options::OPT_mccmov)) {
+      CmdArgs.push_back("-mllvm");
+      CmdArgs.push_back("-riscv-custom-cmov=1");
+    }
     if (A->getOption().matches(options::OPT_mno_ccmov)) {
       CmdArgs.push_back("-mllvm");
       CmdArgs.push_back("-riscv-custom-cmov=0");
