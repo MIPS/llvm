@@ -432,7 +432,8 @@ public:
   bool isAnyReg() const {
     return Kind == KindTy::Register &&
            (RISCVMCRegisterClasses[RISCV::GPRRegClassID].contains(Reg.RegNum) ||
-            RISCVMCRegisterClasses[RISCV::FPR64RegClassID].contains(Reg.RegNum) ||
+            RISCVMCRegisterClasses[RISCV::FPR64RegClassID].contains(
+                Reg.RegNum) ||
             RISCVMCRegisterClasses[RISCV::VRRegClassID].contains(Reg.RegNum));
   }
   bool isAnyRegC() const {
@@ -1515,7 +1516,8 @@ bool RISCVAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
   }
   case Match_InvalidRTZArg: {
     SMLoc ErrorLoc = ((RISCVOperand &)*Operands[ErrorInfo]).getStartLoc();
-    return Error(ErrorLoc, "operand must be 'rtz' floating-point rounding mode");
+    return Error(ErrorLoc,
+                 "operand must be 'rtz' floating-point rounding mode");
   }
   case Match_InvalidVTypeI: {
     SMLoc ErrorLoc = ((RISCVOperand &)*Operands[ErrorInfo]).getStartLoc();
@@ -1907,8 +1909,8 @@ ParseStatus RISCVAsmParser::parseFPImm(OperandVector &Operands) {
   if (IsNegative)
     RealVal.changeSign();
 
-  Operands.push_back(RISCVOperand::createFPImm(
-      RealVal.bitcastToAPInt().getZExtValue(), S));
+  Operands.push_back(
+      RISCVOperand::createFPImm(RealVal.bitcastToAPInt().getZExtValue(), S));
 
   Lex(); // Eat the token.
 
@@ -2733,16 +2735,18 @@ bool RISCVAsmParser::parseDirectiveOption() {
         FeatureBitset OldFeatureBits = STI->getFeatureBits();
 
         setFeatureBits(Ext->Value, Ext->Key);
-        auto ParseResult = RISCVFeatures::parseFeatureBits(isRV64(), STI->getFeatureBits());
+        auto ParseResult =
+            RISCVFeatures::parseFeatureBits(isRV64(), STI->getFeatureBits());
         if (!ParseResult) {
           copySTI().setFeatureBits(OldFeatureBits);
           setAvailableFeatures(ComputeAvailableFeatures(OldFeatureBits));
 
           std::string Buffer;
           raw_string_ostream OutputErrMsg(Buffer);
-          handleAllErrors(ParseResult.takeError(), [&](llvm::StringError &ErrMsg) {
-            OutputErrMsg << ErrMsg.getMessage();
-          });
+          handleAllErrors(ParseResult.takeError(),
+                          [&](llvm::StringError &ErrMsg) {
+                            OutputErrMsg << ErrMsg.getMessage();
+                          });
 
           return Error(Loc, OutputErrMsg.str());
         }
@@ -2754,10 +2758,10 @@ bool RISCVAsmParser::parseDirectiveOption() {
         for (auto Feature : KVArray) {
           if (getSTI().hasFeature(Feature.Value) &&
               Feature.Implies.test(Ext->Value))
-            return Error(Loc,
-                         Twine("Can't disable ") + Ext->Key + " extension, " +
-                             Feature.Key + " extension requires " + Ext->Key +
-                             " extension be enabled");
+            return Error(Loc, Twine("Can't disable ") + Ext->Key +
+                                  " extension, " + Feature.Key +
+                                  " extension requires " + Ext->Key +
+                                  " extension be enabled");
         }
 
         clearFeatureBits(Ext->Value, Ext->Key);
@@ -2981,23 +2985,27 @@ void RISCVAsmParser::emitLoadImm(MCRegister DestReg, int64_t Value,
   for (const RISCVMatInt::Inst &Inst : Seq) {
     switch (Inst.getOpndKind()) {
     case RISCVMatInt::Imm:
-      emitToStreamer(Out,
-                     MCInstBuilder(Inst.getOpcode()).addReg(DestReg).addImm(Inst.getImm()));
+      emitToStreamer(Out, MCInstBuilder(Inst.getOpcode())
+                              .addReg(DestReg)
+                              .addImm(Inst.getImm()));
       break;
     case RISCVMatInt::RegX0:
-      emitToStreamer(
-          Out, MCInstBuilder(Inst.getOpcode()).addReg(DestReg).addReg(SrcReg).addReg(
-                   RISCV::X0));
+      emitToStreamer(Out, MCInstBuilder(Inst.getOpcode())
+                              .addReg(DestReg)
+                              .addReg(SrcReg)
+                              .addReg(RISCV::X0));
       break;
     case RISCVMatInt::RegReg:
-      emitToStreamer(
-          Out, MCInstBuilder(Inst.getOpcode()).addReg(DestReg).addReg(SrcReg).addReg(
-                   SrcReg));
+      emitToStreamer(Out, MCInstBuilder(Inst.getOpcode())
+                              .addReg(DestReg)
+                              .addReg(SrcReg)
+                              .addReg(SrcReg));
       break;
     case RISCVMatInt::RegImm:
-      emitToStreamer(
-          Out, MCInstBuilder(Inst.getOpcode()).addReg(DestReg).addReg(SrcReg).addImm(
-                   Inst.getImm()));
+      emitToStreamer(Out, MCInstBuilder(Inst.getOpcode())
+                              .addReg(DestReg)
+                              .addReg(SrcReg)
+                              .addImm(Inst.getImm()));
       break;
     }
 

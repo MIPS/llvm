@@ -124,7 +124,8 @@ enum NodeType : unsigned {
   FPCLASS,
 
   // Floating point fmax and fmin matching the RISC-V instruction semantics.
-  FMAX, FMIN,
+  FMAX,
+  FMIN,
 
   // READ_CYCLE_WIDE - A read of the 64-bit cycle CSR on a 32-bit target
   // (returns (Lo, Hi)). It takes a chain operand.
@@ -137,10 +138,17 @@ enum NodeType : unsigned {
   UNZIP,
 
   // Scalar cryptography
-  CLMUL, CLMULH, CLMULR,
-  SHA256SIG0, SHA256SIG1, SHA256SUM0, SHA256SUM1,
-  SM4KS, SM4ED,
-  SM3P0, SM3P1,
+  CLMUL,
+  CLMULH,
+  CLMULR,
+  SHA256SIG0,
+  SHA256SIG1,
+  SHA256SUM0,
+  SHA256SUM1,
+  SM4KS,
+  SM4ED,
+  SM3P0,
+  SM3P1,
 
   // Vector Extension
   // VMV_V_V_VL matches the semantics of vmv.v.v but includes an extra operand
@@ -380,6 +388,9 @@ enum NodeType : unsigned {
   // defined in Zicond or XVentanaCondOps.
   CZERO_EQZ, // vt.maskc for XVentanaCondOps.
   CZERO_NEZ, // vt.maskcn for XVentanaCondOps.
+  // MIPS extensions
+  EXT,
+  INS,
 
   // FP to 32 bit int conversions for RV64. These are used to keep track of the
   // result being sign extended to 64 bit. These saturate out of range inputs.
@@ -454,8 +465,8 @@ public:
       SDValue X, ConstantSDNode *XC, ConstantSDNode *CC, SDValue Y,
       unsigned OldShiftOpcode, unsigned NewShiftOpcode,
       SelectionDAG &DAG) const override;
-  /// Return true if the (vector) instruction I will be lowered to an instruction
-  /// with a scalar splat operand for the given Operand number.
+  /// Return true if the (vector) instruction I will be lowered to an
+  /// instruction with a scalar splat operand for the given Operand number.
   bool canSplatOperand(Instruction *I, int Operand) const;
   /// Return true if a vector instruction will lower to a target instruction
   /// able to splat the given operand.
@@ -525,8 +536,7 @@ public:
                                     const APInt &DemandedElts,
                                     TargetLoweringOpt &TLO) const override;
 
-  void computeKnownBitsForTargetNode(const SDValue Op,
-                                     KnownBits &Known,
+  void computeKnownBitsForTargetNode(const SDValue Op, KnownBits &Known,
                                      const APInt &DemandedElts,
                                      const SelectionDAG &DAG,
                                      unsigned Depth) const override;
@@ -698,15 +708,16 @@ public:
       MachineMemOperand::Flags Flags = MachineMemOperand::MONone,
       unsigned *Fast = nullptr) const override;
 
-  bool splitValueIntoRegisterParts(
-      SelectionDAG & DAG, const SDLoc &DL, SDValue Val, SDValue *Parts,
-      unsigned NumParts, MVT PartVT, std::optional<CallingConv::ID> CC)
-      const override;
+  bool
+  splitValueIntoRegisterParts(SelectionDAG &DAG, const SDLoc &DL, SDValue Val,
+                              SDValue *Parts, unsigned NumParts, MVT PartVT,
+                              std::optional<CallingConv::ID> CC) const override;
 
-  SDValue joinRegisterPartsIntoValue(
-      SelectionDAG & DAG, const SDLoc &DL, const SDValue *Parts,
-      unsigned NumParts, MVT PartVT, EVT ValueVT,
-      std::optional<CallingConv::ID> CC) const override;
+  SDValue
+  joinRegisterPartsIntoValue(SelectionDAG &DAG, const SDLoc &DL,
+                             const SDValue *Parts, unsigned NumParts,
+                             MVT PartVT, EVT ValueVT,
+                             std::optional<CallingConv::ID> CC) const override;
 
   // Return the value of VLMax for the given vector type (i.e. SEW and LMUL)
   SDValue computeVLMax(MVT VecVT, const SDLoc &DL, SelectionDAG &DAG) const;

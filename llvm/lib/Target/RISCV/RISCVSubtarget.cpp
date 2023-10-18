@@ -48,6 +48,31 @@ static cl::opt<unsigned> RISCVMaxBuildIntsCost(
     cl::desc("The maximum cost used for building integers."), cl::init(0),
     cl::Hidden);
 
+static cl::opt<bool> UseLoadStorePairsOpt(
+    "riscv-load-store-pairs",
+    cl::desc("RISCV: Optimize for load-store bonding"),
+    cl::init(false), cl::Hidden);
+
+static cl::opt<bool> UseCCMovInsn(
+    "riscv-ccmov",
+    cl::desc("RISCV: Use 'ccmov' instruction"),
+    cl::init(true), cl::Hidden);
+
+static cl::opt<bool> RISCVRemoveBackToBackBranches(
+    "riscv-remove-back-to-back-branches",
+    cl::desc("RISCV: Insert nops to clear pipeline hazards."),
+    cl::init(false), cl::Hidden);
+
+static cl::opt<bool> UseExtInsn(
+    "riscv-ext",
+    cl::desc("RISCV: Use 'ext' instruction"),
+    cl::init(false), cl::Hidden);
+
+static cl::opt<bool> UseInsInsn(
+    "riscv-ins",
+    cl::desc("RISCV: Use 'ins' instruction"),
+    cl::init(false), cl::Hidden);
+
 void RISCVSubtarget::anchor() {}
 
 RISCVSubtarget &
@@ -174,4 +199,25 @@ bool RISCVSubtarget::enableSubRegLiveness() const {
 void RISCVSubtarget::getPostRAMutations(
     std::vector<std::unique_ptr<ScheduleDAGMutation>> &Mutations) const {
   Mutations.push_back(createRISCVMacroFusionDAGMutation());
+}
+
+bool RISCVSubtarget::useLoadStorePairs() const {
+  return UseLoadStorePairsOpt && HasLoadStorePairs;
+}
+
+bool RISCVSubtarget::useCCMovInsn() const {
+  return UseCCMovInsn && HasCCMov;
+}
+
+bool RISCVSubtarget::shouldRemoveBackToBackBranches() const {
+  return RISCVRemoveBackToBackBranches &&
+    (hasFeature(RISCV::Proci8500) || hasFeature(RISCV::Procp8700));
+}
+
+bool RISCVSubtarget::shouldUseExt() const {
+  return UseExtInsn && HasExt;
+}
+
+bool RISCVSubtarget::shouldUseIns() const {
+  return UseInsInsn && HasIns;
 }

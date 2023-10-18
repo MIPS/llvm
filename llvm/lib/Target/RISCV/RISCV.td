@@ -14,6 +14,43 @@ include "llvm/Target/Target.td"
 
 include "RISCVFeatures.td"
 
+def Proci8500 : SubtargetFeature<"i8500", "RISCVProcFamily", "Others",
+                                   "i8500 processor">;
+
+def Procp8700 : SubtargetFeature<"p8700", "RISCVProcFamily", "Others",
+                                   "p8700 processor">;
+
+def FeatureCCMov : SubtargetFeature<"ccmov", "HasCCMov",
+                                   "true", "Using CCMov",
+                                   [Feature64Bit]>;
+
+def UsesCCMov
+    : Predicate<"Subtarget->useCCMovInsn()">,
+      AssemblerPredicate<(all_of FeatureCCMov), "'ccmov' instruction">;
+
+def FeatureExt : SubtargetFeature<"ext", "HasExt",
+                                  "true", "Using ext instruction">;
+
+def UsesExt : Predicate<"Subtarget->shouldUseExt()">,
+                   AssemblerPredicate<(all_of FeatureExt),
+                                      "'ext' instruction">;
+
+def FeatureIns : SubtargetFeature<"ins", "HasIns",
+                                  "true", "Using ins instruction">;
+
+def UsesIns : Predicate<"Subtarget->shouldUseIns()">,
+                   AssemblerPredicate<(all_of FeatureIns),
+                                      "'ins' instruction">;
+
+def FeatureLoadStorePairs
+    : SubtargetFeature<"load-store-pairs", "HasLoadStorePairs", "true",
+                       "Optimize for hardware load-store bonding">;
+
+def UsesLoadStorePairs
+    : Predicate<"Subtarget->useLoadStorePairs()">,
+      AssemblerPredicate<(all_of FeatureLoadStorePairs),
+                         "load and store pair instructions">;
+
 //===----------------------------------------------------------------------===//
 // Named operands for CSR instructions.
 //===----------------------------------------------------------------------===//
@@ -37,6 +74,8 @@ include "GISel/RISCVRegisterBanks.td"
 include "RISCVSchedRocket.td"
 include "RISCVSchedSiFive7.td"
 include "RISCVSchedSyntacoreSCR1.td"
+include "RISCVSchedi8500.td"
+include "RISCVSchedp8700.td"
 
 //===----------------------------------------------------------------------===//
 // RISC-V processors supported.

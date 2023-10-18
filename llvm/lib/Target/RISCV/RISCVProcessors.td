@@ -168,6 +168,16 @@ def SIFIVE_U74 : RISCVProcessorModel<"sifive-u74",
                                       FeatureStdExtC],
                                      [TuneSiFive7]>;
 
+def SIFIVE_U74_NO_SCHED : ProcessorModel<"sifive-u74NoSched",
+                                         NoSchedModel,
+                                         [Feature64Bit,
+                                          FeatureStdExtM,
+                                          FeatureStdExtA,
+                                          FeatureStdExtF,
+                                          FeatureStdExtD,
+                                          FeatureStdExtC],
+                                         [TuneSiFive7]>;
+
 def SIFIVE_X280 : RISCVProcessorModel<"sifive-x280", SiFive7Model,
                                       [Feature64Bit,
                                        FeatureStdExtZifencei,
@@ -184,6 +194,34 @@ def SIFIVE_X280 : RISCVProcessorModel<"sifive-x280", SiFive7Model,
                                        FeatureStdExtZbb],
                                       [TuneSiFive7,
                                        TuneDLenFactor2]>;
+                                       
+def I8500 : RISCVProcessorModel<"i8500",
+                                i8500Model,
+                                [Feature64Bit,
+                                 FeatureStdExtM,
+                                 FeatureStdExtA,
+                                 FeatureStdExtF,
+                                 FeatureStdExtD,
+                                 FeatureStdExtC,
+                                 FeatureCCMov,
+                                 FeatureExt,
+                                 FeatureIns,
+                                 FeatureLoadStorePairs],
+                                [Proci8500]>;
+
+def P8700 : RISCVProcessorModel<"p8700",
+                                p8700Model,
+                                [Feature64Bit,
+                                 FeatureStdExtM,
+                                 FeatureStdExtA,
+                                 FeatureStdExtF,
+                                 FeatureStdExtD,
+                                 FeatureStdExtC,
+                                 FeatureCCMov,
+                                 FeatureExt,
+                                 FeatureIns,
+                                 FeatureLoadStorePairs],
+                                [Procp8700]>;
 
 def SYNTACORE_SCR1_BASE : RISCVProcessorModel<"syntacore-scr1-base",
                                               SyntacoreSCR1Model,

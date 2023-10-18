@@ -44,6 +44,13 @@ def SDT_RISCVIntBinOpW : SDTypeProfile<1, 2, [
 def SDT_RISCVIntShiftDOpW : SDTypeProfile<1, 3, [
   SDTCisSameAs<0, 1>, SDTCisSameAs<0, 2>, SDTCisVT<0, i64>, SDTCisVT<3, i64>
 ]>;
+def SDT_RISCVExt : SDTypeProfile<1, 3, [
+  SDTCisInt<0>, SDTCisSameAs<0, 1>, SDTCisVT<2, XLenVT>, SDTCisSameAs<2, 3>
+]>;
+def SDT_RISCVIns : SDTypeProfile<1, 4, [
+  SDTCisInt<0>, SDTCisSameAs<0, 1>, SDTCisVT<2, XLenVT>, SDTCisSameAs<2, 3>,
+  SDTCisSameAs<0, 4>
+]>;
 
 // Target-independent nodes, but with target-specific formats.
 def callseq_start : SDNode<"ISD::CALLSEQ_START", SDT_CallSeqStart,
@@ -95,6 +102,9 @@ def riscv_add_tprel : SDNode<"RISCVISD::ADD_TPREL",
 def riscv_la_tls_ie : SDNode<"RISCVISD::LA_TLS_IE", SDTLoad,
                              [SDNPHasChain, SDNPMayLoad, SDNPMemOperand]>;
 def riscv_la_tls_gd : SDNode<"RISCVISD::LA_TLS_GD", SDTIntUnaryOp>;
+
+def riscv_ext : SDNode<"RISCVISD::EXT", SDT_RISCVExt>;
+def riscv_ins : SDNode<"RISCVISD::INS", SDT_RISCVIns>;
 
 //===----------------------------------------------------------------------===//
 // Operand and SDNode transformation definitions.
@@ -237,7 +247,7 @@ def InsnDirectiveOpcode : AsmOperandClass {
   let PredicateMethod = "isImm";
 }
 
-def uimm6 : Operand<XLenVT> {
+def uimm6 : Operand<XLenVT>, ImmLeaf<XLenVT, [{return isUInt<6>(Imm);}]> {
   let ParserMatchClass = UImmAsmOperand<6>;
   let DecoderMethod = "decodeUImmOperand<6>";
   let OperandType = "OPERAND_UIMM6";
@@ -413,6 +423,10 @@ def ixlenimm_li_restricted : Operand<XLenVT> {
 }
 
 // Standalone (codegen-only) immleaf patterns.
+
+// A 12-bit signed immediate plus one where the imm range will be -2047~2048.
+def simm12_plus1 : ImmLeaf<XLenVT,
+  [{return (isInt<12>(Imm) && Imm != -2048) || Imm == 2048;}]>;
 
 // A 6-bit constant greater than 32.
 def uimm6gt32 : ImmLeaf<XLenVT, [{
@@ -815,6 +829,13 @@ def SRAW  : ALUW_rr<0b0100000, 0b101, "sraw">,
             Sched<[WriteShiftReg32, ReadShiftReg32, ReadShiftReg32]>;
 } // IsSignExtendingOpW = 1
 } // Predicates = [IsRV64]
+
+let Predicates = [UsesCCMov], hasSideEffects = 0, mayLoad = 0, mayStore = 0 in {
+def CCMOV : RVInstR4<0b11, 0b101, OPC_CUSTOM_0, (outs GPR:$rd),
+                    (ins GPR:$rs1, GPR:$rs2, GPR:$rs3),
+                    "ccmov", "$rd, $rs2, $rs1, $rs3">,
+           Sched<[]>;
+} // Predicates = [UsesCCMov]
 
 //===----------------------------------------------------------------------===//
 // Privileged instructions
@@ -1926,6 +1947,106 @@ let Predicates = [IsRV64] in {
 def : Pat<(binop_allwusers<add> GPR:$rs1, (AddiPair:$rs2)),
           (ADDIW (ADDIW GPR:$rs1, (AddiPairImmLarge AddiPair:$rs2)),
                  (AddiPairImmSmall AddiPair:$rs2))>;
+}
+
+/// Select to ccmov patterns
+let Predicates = [UsesCCMov] in {
+def : Pat<(select (XLenVT (setne (XLenVT GPR:$rs2), (XLenVT 0))), (XLenVT GPR:$rs1), (XLenVT GPR:$rs3)),
+          (CCMOV GPR:$rs1, GPR:$rs2, GPR:$rs3)>;
+def : Pat<(select (XLenVT (seteq (XLenVT GPR:$rs2), (XLenVT 0))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, GPR:$rs2, GPR:$rs3)>;
+def : Pat<(select (XLenVT (setne (XLenVT GPR:$x), (XLenVT simm12_plus1:$y))), (XLenVT GPR:$rs1), (XLenVT GPR:$rs3)),
+          (CCMOV GPR:$rs1, (ADDI GPR:$x, (NegImm simm12_plus1:$y)), GPR:$rs3)>;
+def : Pat<(select (XLenVT (seteq (XLenVT GPR:$x), (XLenVT simm12_plus1:$y))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, (ADDI GPR:$x, (NegImm simm12_plus1:$y)), GPR:$rs3)>;
+def : Pat<(select (XLenVT (setne (XLenVT GPR:$x), (XLenVT GPR:$y))), (XLenVT GPR:$rs1), (XLenVT GPR:$rs3)),
+          (CCMOV GPR:$rs1, (XOR GPR:$x, GPR:$y), GPR:$rs3)>;
+def : Pat<(select (XLenVT (seteq (XLenVT GPR:$x), (XLenVT GPR:$y))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, (XOR GPR:$x, GPR:$y), GPR:$rs3)>;
+def : Pat<(select (XLenVT (setuge (XLenVT GPR:$x), (XLenVT GPR:$y))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, (SLTU GPR:$x, GPR:$y), GPR:$rs3)>;
+def : Pat<(select (XLenVT (setule (XLenVT GPR:$y), (XLenVT GPR:$x))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, (SLTU GPR:$x, GPR:$y), GPR:$rs3)>;
+def : Pat<(select (XLenVT (setge (XLenVT GPR:$x), (XLenVT GPR:$y))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, (SLT GPR:$x, GPR:$y), GPR:$rs3)>;
+def : Pat<(select (XLenVT (setle (XLenVT GPR:$y), (XLenVT GPR:$x))), (XLenVT GPR:$rs3), (XLenVT GPR:$rs1)),
+          (CCMOV GPR:$rs1, (SLT GPR:$x, GPR:$y), GPR:$rs3)>;
+def : Pat<(select (XLenVT GPR:$rs2), (XLenVT GPR:$rs1), (XLenVT GPR:$rs3)),
+          (CCMOV GPR:$rs1, GPR:$rs2, GPR:$rs3)>;
+} // Predicates = [UsesCCMov]
+
+//===----------------------------------------------------------------------===//
+// MIPS extensions
+//===----------------------------------------------------------------------===//
+
+let Predicates = [UsesLoadStorePairs], hasSideEffects = 0 in {
+def LWP : Pseudo<(outs GPR:$rd1, GPR:$rd2), (ins GPR:$rs1, uimm7:$imm7), [],
+                  "lwp", "$rd1, $rd2, ${imm7}(${rs1})">,
+                  Sched<[WriteLDW, WriteLDW, ReadMemBase]> {
+let mayLoad = 1;
+let mayStore = 0;
+}
+def LDP : Pseudo<(outs GPR:$rd1, GPR:$rd2), (ins GPR:$rs1, uimm7:$imm7), [],
+                  "ldp", "$rd1, $rd2, ${imm7}(${rs1})">,
+                  Sched<[WriteLDD, WriteLDD, ReadMemBase]> {
+let mayLoad = 1;
+let mayStore = 0;
+}
+def SWP : Pseudo<(outs), (ins GPR:$rs2, GPR:$rs3, GPR:$rs1, uimm7:$imm7), [],
+                  "swp", "$rs2, $rs3, ${imm7}(${rs1})">,
+                  Sched<[WriteSTW, ReadStoreData, ReadStoreData, ReadMemBase]> {
+let mayLoad = 0;
+let mayStore = 1;
+}
+def SDP : Pseudo<(outs), (ins GPR:$rs2, GPR:$rs3, GPR:$rs1, uimm7:$imm7), [],
+                  "sdp", "$rs2, $rs3, ${imm7}(${rs1})">,
+                  Sched<[WriteSTD, ReadStoreData, ReadStoreData, ReadMemBase]> {
+let mayLoad = 0;
+let mayStore = 1;
+}
+}
+
+let Predicates = [UsesExt], hasSideEffects = 0 in {
+def PseudoEXT : Pseudo<(outs GPR:$rt),
+                       (ins GPR:$rs, uimm6:$pos, uimm6:$size), [],
+                       "ext", "$rt, $rs, $pos, $size"> {
+let mayLoad = 0;
+let mayStore = 0;
+}
+
+def EXT : RVInstExtIns<(outs GPR:$rt),
+                       (ins GPR:$rs, uimm6:$lsb, uimm6:$msbd),
+                       "ext_mc", "$rt, $rs, $lsb, $msbd"> {
+let mayLoad = 0;
+let mayStore = 0;
+let DecoderNamespace = "DecodeEXT";
+}
+}
+
+let Predicates = [UsesIns], hasSideEffects = 0 in {
+def PseudoINS : Pseudo<(outs GPR:$rt),
+                       (ins GPR:$rd, GPR:$rs, uimm6:$pos, uimm6:$size), [],
+                       "ins", "$rd, $rs, $pos, $size"> {
+let mayLoad = 0;
+let mayStore = 0;
+}
+
+def INS : RVInstExtIns<(outs GPR:$rt),
+                       (ins GPR:$rd, GPR:$rs, uimm6:$lsb, uimm6:$msbd),
+                       "ins_mc", "$rd, $rs, $lsb, $msbd"> {
+let mayLoad = 0;
+let mayStore = 0;
+}
+}
+
+let Predicates = [UsesExt] in {
+def : Pat<(riscv_ext (XLenVT GPR:$rs), uimm6:$pos, uimm6:$size),
+          (PseudoEXT (XLenVT GPR:$rs), uimm6:$pos, uimm6:$size)>;
+}
+
+let Predicates = [UsesIns] in {
+def : Pat<(riscv_ins GPR:$rd, GPR:$rs, uimm6:$pos, uimm6:$size),
+          (PseudoINS GPR:$rd, GPR:$rs, uimm6:$pos, uimm6:$size)>;
 }
 
 //===----------------------------------------------------------------------===//
