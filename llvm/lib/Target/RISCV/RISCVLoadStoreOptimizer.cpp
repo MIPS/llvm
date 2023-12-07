@@ -311,7 +311,7 @@ RISCVLoadStoreOpt::findMatchingInsn(MachineBasicBlock::iterator I,
   return E;
 }
 
-MachineBasicBlock::iterator __attribute__((noinline))
+MachineBasicBlock::iterator
 RISCVLoadStoreOpt::mergePairedInsns(MachineBasicBlock::iterator I,
                                     MachineBasicBlock::iterator Paired,
                                     bool MergeForward) {
