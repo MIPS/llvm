@@ -364,12 +364,6 @@ enum RankFlags {
 // priority.
 static unsigned singleLetterExtensionRank(char Ext) {
   assert(Ext >= 'a' && Ext <= 'z');
-  switch (Ext) {
-  case 'i':
-    return 0;
-  case 'e':
-    return 1;
-  }
 
   size_t Pos = AllStdExts.find(Ext);
   if (Pos != StringRef::npos)
@@ -394,6 +388,10 @@ static unsigned getExtensionRank(const std::string &ExtName) {
     return RF_Z_EXTENSION | singleLetterExtensionRank(ExtName[1]);
   case 'x':
     return RF_X_EXTENSION;
+  case 'i':
+    return 0;
+  case 'e':
+    return 1;
   default:
     assert(ExtName.size() == 1);
     return singleLetterExtensionRank(ExtName[0]);
