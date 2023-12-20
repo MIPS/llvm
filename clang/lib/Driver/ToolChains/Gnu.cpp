@@ -1781,8 +1781,10 @@ static void findRISCVBareMetalMultilibs(const Driver &D,
   }
   SmallVector<MultilibBuilder, 2> Endian;
   if (TargetTriple.getVendor() == llvm::Triple::MipsTechnologies) {
-    Endian.push_back(MultilibBuilder("/riscv").flag("-EL").flag("-EB"));
-    Endian.push_back(MultilibBuilder("/riscveb").flag("-EB").flag("-EL"));
+    Endian.push_back(
+        MultilibBuilder("/riscv").flag("-EL").flag("-EB", /*Disallow=*/true));
+    Endian.push_back(
+        MultilibBuilder("/riscveb").flag("-EB").flag("-EL", /*Disallow=*/true));
   }
   MultilibSet RISCVMultilibs =
       MultilibSetBuilder()
@@ -1851,8 +1853,10 @@ static void findRISCVMultilibs(const Driver &D,
 
   SmallVector<MultilibBuilder, 2> Endian;
   if (TargetTriple.getVendor() == llvm::Triple::MipsTechnologies) {
-    Endian.push_back(MultilibBuilder("/riscv").flag("-EL").flag("-EB"));
-    Endian.push_back(MultilibBuilder("/riscveb").flag("-EB").flag("-EL"));
+    Endian.push_back(
+        MultilibBuilder("/riscv").flag("-EL").flag("-EB", /*Disallow=*/true));
+    Endian.push_back(
+        MultilibBuilder("/riscveb").flag("-EB").flag("-EL", /*Disallow=*/true));
   }
 
   MultilibSet RISCVMultilibs =
