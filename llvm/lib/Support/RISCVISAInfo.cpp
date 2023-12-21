@@ -11,6 +11,7 @@
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/raw_ostream.h"
@@ -23,6 +24,10 @@
 
 using namespace llvm;
 
+static cl::opt<bool>
+    LegacyMarchOrder("riscv-enable-legacy-march-order",
+                     cl::desc("Enables the legacy march order for RISCV"),
+                     cl::init(false), cl::Hidden);
 namespace {
 /// Represents the major and version number components of a RISC-V extension
 struct RISCVExtensionVersion {
@@ -365,6 +370,15 @@ enum RankFlags {
 static unsigned singleLetterExtensionRank(char Ext) {
   assert(Ext >= 'a' && Ext <= 'z');
 
+  if (!LegacyMarchOrder) {
+    switch (Ext) {
+    case 'i':
+      return 0;
+    case 'e':
+      return 1;
+    }
+  }
+
   size_t Pos = AllStdExts.find(Ext);
   if (Pos != StringRef::npos)
     return Pos + 2; // Skip 'e' and 'i' from above.
@@ -389,8 +403,10 @@ static unsigned getExtensionRank(const std::string &ExtName) {
   case 'x':
     return RF_X_EXTENSION;
   case 'i':
+    assert(ExtName.size() == 1);
     return 0;
   case 'e':
+    assert(ExtName.size() == 1);
     return 1;
   default:
     assert(ExtName.size() == 1);
