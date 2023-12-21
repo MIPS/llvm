@@ -2200,6 +2200,13 @@ void Clang::AddRISCVTargetArgs(const ArgList &Args,
       CmdArgs.push_back("-riscv-remove-back-to-back-branches=1");
     }
   }
+
+  // Use legacy ordering when fowarding march to asm
+  if (Arg *A = Args.getLastArg(options::OPT_menable_legacy_march_order)) {
+    CmdArgs.push_back("-mllvm");
+    CmdArgs.push_back("-riscv-enable-legacy-march-order=1");
+  }
+
   // Handle -mrvv-vector-bits=<bits>
   if (Arg *A = Args.getLastArg(options::OPT_mrvv_vector_bits_EQ)) {
     StringRef Val = A->getValue();

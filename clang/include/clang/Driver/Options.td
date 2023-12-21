@@ -3816,6 +3816,8 @@ def mno_ext : Flag<["-"], "mno-ext">, Group<m_riscv_Features_Group>;
 def mins : Flag<["-"], "mins">, Group<m_riscv_Features_Group>;
 def mno_ins : Flag<["-"], "mno-ins">, Group<m_riscv_Features_Group>;
 def mremove_back_to_back_branches : Flag<["-"], "mremove-back-to-back-branches">, Group<m_riscv_Features_Group>;
+def menable_legacy_march_order : Flag<["-"], "menable-legacy-march-order">,Group<m_Group>, 
+  HelpText<"Use legacy -march order when forwarding RISC-V extensions to asm.">;
 def mno_remove_back_to_back_branches : Flag<["-"], "mno-remove-back-to-back-branches">, Group<m_riscv_Features_Group>;
 def mcmodel_EQ_medlow : Flag<["-"], "mcmodel=medlow">, Group<m_riscv_Features_Group>,
   Flags<[CC1Option]>, Alias<mcmodel_EQ>, AliasArgs<["small"]>,
