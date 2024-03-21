@@ -831,7 +831,7 @@ def SRAW  : ALUW_rr<0b0100000, 0b101, "sraw">,
 } // Predicates = [IsRV64]
 
 let Predicates = [UsesCCMov], hasSideEffects = 0, mayLoad = 0, mayStore = 0 in {
-def CCMOV : RVInstR4<0b11, 0b101, OPC_CUSTOM_0, (outs GPR:$rd),
+def CCMOV : RVInstR4<0b11, 0b011, OPC_CUSTOM_0, (outs GPR:$rd),
                     (ins GPR:$rs1, GPR:$rs2, GPR:$rs3),
                     "ccmov", "$rd, $rs2, $rs1, $rs3">,
            Sched<[]>;
