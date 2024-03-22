@@ -423,11 +423,14 @@ RISCVTargetLowering::RISCVTargetLowering(const TargetMachine &TM,
   if (Subtarget.hasShortForwardBranchOpt())
     setOperationAction(ISD::ABS, XLenVT, Legal);
 
-  if (!Subtarget.hasVendorXTHeadCondMov()) {
+  if (Subtarget.hasCCMov()) {
+    setOperationAction(ISD::SELECT, XLenVT, Legal);
+  } else if (!Subtarget.hasVendorXTHeadCondMov()) {
     setOperationAction(ISD::SELECT, XLenVT, Custom);
     if (RV64LegalI32 && Subtarget.is64Bit())
       setOperationAction(ISD::SELECT, MVT::i32, Promote);
   }
+
 
   static const unsigned FPLegalNodeTypes[] = {
       ISD::FMINNUM,        ISD::FMAXNUM,       ISD::LRINT,

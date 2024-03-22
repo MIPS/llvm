@@ -44,6 +44,7 @@ add_llvm_target(RISCVCodeGen
   RISCVISelDAGToDAG.cpp
   RISCVISelLowering.cpp
   RISCVMachineFunctionInfo.cpp
+  RISCVLoadStoreOptimizer.cpp
   RISCVMergeBaseOffset.cpp
   RISCVOptWInstrs.cpp
   RISCVPostRAExpandPseudoInsts.cpp
@@ -51,6 +52,7 @@ add_llvm_target(RISCVCodeGen
   RISCVMoveMerger.cpp
   RISCVPushPopOptimizer.cpp
   RISCVRegisterInfo.cpp
+  RISCVRemoveBackToBackBranches.cpp
   RISCVSubtarget.cpp
   RISCVTargetMachine.cpp
   RISCVTargetObjectFile.cpp

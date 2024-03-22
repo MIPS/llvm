@@ -73,6 +73,10 @@ static cl::opt<bool> EnableRISCVCopyPropagation(
     "riscv-enable-copy-propagation",
     cl::desc("Enable the copy propagation with RISC-V copy instr"),
     cl::init(true), cl::Hidden);
+static cl::opt<bool>
+    EnableGEPOpt("riscv-enable-gep-opt", cl::Hidden,
+                 cl::desc("Enable optimizations on complex GEPs"),
+                 cl::init(false));
 
 static cl::opt<bool> EnableRISCVDeadRegisterElimination(
     "riscv-enable-dead-defs", cl::Hidden,
@@ -126,6 +130,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeRISCVTarget() {
   initializeRISCVDAGToDAGISelPass(*PR);
   initializeRISCVMoveMergePass(*PR);
   initializeRISCVPushPopOptPass(*PR);
+  initializeRISCVLoadStoreOptPass(*PR);
 }
 
 static StringRef computeDataLayout(const Triple &TT,
@@ -355,10 +360,20 @@ public:
   ScheduleDAGInstrs *
   createMachineScheduler(MachineSchedContext *C) const override {
     ScheduleDAGMILive *DAG = nullptr;
+    const RISCVSubtarget &ST = C->MF->getSubtarget<RISCVSubtarget>();
     if (EnableMISchedLoadClustering) {
       DAG = createGenericSchedLive(C);
       DAG->addMutation(createLoadClusterDAGMutation(
           DAG->TII, DAG->TRI, /*ReorderWhileClustering=*/true));
+    }
+    if (!ST.getMacroFusions().empty()) {
+      DAG = DAG ? DAG : createGenericSchedLive(C);
+
+      const RISCVSubtarget &ST = C->MF->getSubtarget<RISCVSubtarget>();
+      if (ST.useLoadStorePairs()) {
+        DAG->addMutation(createLoadClusterDAGMutation(DAG->TII, DAG->TRI));
+        DAG->addMutation(createStoreClusterDAGMutation(DAG->TII, DAG->TRI));
+      }
     }
     return DAG;
   }
@@ -422,7 +437,17 @@ bool RISCVPassConfig::addRegAssignAndRewriteOptimized() {
 void RISCVPassConfig::addIRPasses() {
   addPass(createAtomicExpandLegacyPass());
 
-  if (getOptLevel() != CodeGenOptLevel::None) {
+  if (TM->getOptLevel() == CodeGenOptLevel::Aggressive && EnableGEPOpt) {
+    addPass(createSeparateConstOffsetFromGEPPass(false));
+    // Call EarlyCSE pass to find and remove subexpressions in the lowered
+    // result.
+    addPass(createEarlyCSEPass());
+    // Do loop invariant code motion in case part of the lowered result is
+    // invariant.
+    addPass(createLICMPass());
+  }
+
+  if (getOptLevel() != CodeGenOptLevel::None){
     if (EnableLoopDataPrefetch)
       addPass(createLoopDataPrefetchPass());
 
@@ -501,10 +526,12 @@ void RISCVPassConfig::addPreSched2() {
 
   // Emit KCFI checks for indirect calls.
   addPass(createKCFIPass());
+  if (TM->getOptLevel() != CodeGenOptLevel::None) {
+      addPass(createRISCVLoadStoreOptPass());
+  }
 }
 
 void RISCVPassConfig::addPreEmitPass() {
-  addPass(&BranchRelaxationPassID);
   addPass(createRISCVMakeCompressibleOptPass());
 
   // TODO: It would potentially be better to schedule copy propagation after
@@ -515,6 +542,12 @@ void RISCVPassConfig::addPreEmitPass() {
   if (TM->getOptLevel() >= CodeGenOptLevel::Default &&
       EnableRISCVCopyPropagation)
     addPass(createMachineCopyPropagationPass(true));
+  // LoadStoreOptimizer creates bundles for load-store bonding.
+  addPass(createUnpackMachineBundles([](const MachineFunction &MF) {
+    return MF.getSubtarget<RISCVSubtarget>().useLoadStorePairs();
+  }));
+  addPass(&BranchRelaxationPassID);
+  addPass(createRISCVRemoveBackToBackBranches());
 }
 
 void RISCVPassConfig::addPreEmitPass2() {
