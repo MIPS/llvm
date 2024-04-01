@@ -63,6 +63,7 @@ add_llvm_unittest(SupportTests
   Path.cpp
   ProcessTest.cpp
   ProgramTest.cpp
+  ProgressTest.cpp
   RegexTest.cpp
   ReverseIterationTest.cpp
   ReplaceFileTest.cpp
