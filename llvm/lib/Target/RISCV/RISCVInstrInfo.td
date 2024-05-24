@@ -211,6 +211,124 @@ def uimm7 : Operand<XLenVT> {
   let OperandNamespace = "RISCVOp";
 }
 
+// A 7-bit unsigned immediate where the least significant two bits are zero.
+def uimm7_lsb00 : Operand<XLenVT>,
+                  ImmLeaf<XLenVT, [{return isShiftedUInt<5, 2>(Imm);}]> {
+  let ParserMatchClass = UImmAsmOperand<7, "Lsb00">;
+  let EncoderMethod = "getImmOpValue";
+  let DecoderMethod = "decodeUImmOperand<7>";
+  let MCOperandPredicate = [{
+    int64_t Imm;
+    if (!MCOp.evaluateAsConstantImm(Imm))
+      return false;
+    return isShiftedUInt<5, 2>(Imm);
+  }];
+}
+
+// A 7-bit unsigned immediate where the least significant three bits are zero.
+def uimm7_lsb000 : Operand<XLenVT>,
+                   ImmLeaf<XLenVT, [{return isShiftedUInt<4, 3>(Imm);}]> {
+  let ParserMatchClass = UImmAsmOperand<7, "Lsb000">;
+  let EncoderMethod = "getImmOpValue";
+  let DecoderMethod = "decodeUImmOperand<7>";
+  let MCOperandPredicate = [{
+    int64_t Imm;
+    if (!MCOp.evaluateAsConstantImm(Imm))
+      return false;
+    return isShiftedUInt<4, 3>(Imm);
+  }];
+}
+
+// A 8-bit unsigned immediate where the least significant two bits are zero.
+def uimm8_lsb00 : Operand<XLenVT>,
+                  ImmLeaf<XLenVT, [{return isShiftedUInt<6, 2>(Imm);}]> {
+  let ParserMatchClass = UImmAsmOperand<8, "Lsb00">;
+  let EncoderMethod = "getImmOpValue";
+  let DecoderMethod = "decodeUImmOperand<8>";
+  let MCOperandPredicate = [{
+    int64_t Imm;
+    if (!MCOp.evaluateAsConstantImm(Imm))
+      return false;
+    return isShiftedUInt<6, 2>(Imm);
+  }];
+}
+
+// A 8-bit unsigned immediate where the least significant three bits are zero.
+def uimm8_lsb000 : Operand<XLenVT>,
+                   ImmLeaf<XLenVT, [{return isShiftedUInt<5, 3>(Imm);}]> {
+  let ParserMatchClass = UImmAsmOperand<8, "Lsb000">;
+  let EncoderMethod = "getImmOpValue";
+  let DecoderMethod = "decodeUImmOperand<8>";
+  let MCOperandPredicate = [{
+    int64_t Imm;
+    if (!MCOp.evaluateAsConstantImm(Imm))
+      return false;
+    return isShiftedUInt<5, 3>(Imm);
+  }];
+}
+
+// A 9-bit signed immediate where the least significant bit is zero.
+def simm9_lsb0 : Operand<OtherVT>,
+                 ImmLeaf<XLenVT, [{return isShiftedInt<8, 1>(Imm);}]> {
+  let ParserMatchClass = SImmAsmOperand<9, "Lsb0">;
+  let PrintMethod = "printBranchOperand";
+  let EncoderMethod = "getImmOpValueAsr1";
+  let DecoderMethod = "decodeSImmOperandAndLsl1<9>";
+  let MCOperandPredicate = [{
+    int64_t Imm;
+    if (MCOp.evaluateAsConstantImm(Imm))
+      return isShiftedInt<8, 1>(Imm);
+    return MCOp.isBareSymbolRef();
+
+  }];
+  let OperandType = "OPERAND_PCREL";
+}
+
+// A 9-bit unsigned immediate where the least significant three bits are zero.
+def uimm9_lsb000 : Operand<XLenVT>,
+                   ImmLeaf<XLenVT, [{return isShiftedUInt<6, 3>(Imm);}]> {
+  let ParserMatchClass = UImmAsmOperand<9, "Lsb000">;
+  let EncoderMethod = "getImmOpValue";
+  let DecoderMethod = "decodeUImmOperand<9>";
+  let MCOperandPredicate = [{
+    int64_t Imm;
+    if (!MCOp.evaluateAsConstantImm(Imm))
+      return false;
+    return isShiftedUInt<6, 3>(Imm);
+  }];
+}
+
+// A 10-bit unsigned immediate where the least significant two bits are zero
+// and the immediate can't be zero.
+def uimm10_lsb00nonzero : Operand<XLenVT>,
+                          ImmLeaf<XLenVT,
+                          [{return isShiftedUInt<8, 2>(Imm) && (Imm != 0);}]> {
+  let ParserMatchClass = UImmAsmOperand<10, "Lsb00NonZero">;
+  let EncoderMethod = "getImmOpValue";
+  let DecoderMethod = "decodeUImmNonZeroOperand<10>";
+  let MCOperandPredicate = [{
+    int64_t Imm;
+    if (!MCOp.evaluateAsConstantImm(Imm))
+      return false;
+    return isShiftedUInt<8, 2>(Imm) && (Imm != 0);
+  }];
+}
+
+// A 10-bit signed immediate where the least significant four bits are zero.
+def simm10_lsb0000nonzero : Operand<XLenVT>,
+                            ImmLeaf<XLenVT,
+                            [{return (Imm != 0) && isShiftedInt<6, 4>(Imm);}]> {
+  let ParserMatchClass = SImmAsmOperand<10, "Lsb0000NonZero">;
+  let EncoderMethod = "getImmOpValue";
+  let DecoderMethod = "decodeSImmNonZeroOperand<10>";
+  let MCOperandPredicate = [{
+    int64_t Imm;
+    if (!MCOp.evaluateAsConstantImm(Imm))
+      return false;
+    return isShiftedInt<6, 4>(Imm) && (Imm != 0);
+  }];
+}
+
 def simm12 : Operand<XLenVT>, ImmLeaf<XLenVT, [{return isInt<12>(Imm);}]> {
   let ParserMatchClass = SImmAsmOperand<12>;
   let EncoderMethod = "getImmOpValue";
@@ -223,6 +341,22 @@ def simm12 : Operand<XLenVT>, ImmLeaf<XLenVT, [{return isInt<12>(Imm);}]> {
   }];
   let OperandType = "OPERAND_SIMM12";
   let OperandNamespace = "RISCVOp";
+}
+
+// A 12-bit signed immediate where the least significant bit is zero.
+def simm12_lsb0 : Operand<XLenVT>,
+                  ImmLeaf<XLenVT, [{return isShiftedInt<11, 1>(Imm);}]> {
+  let ParserMatchClass = SImmAsmOperand<12, "Lsb0">;
+  let PrintMethod = "printBranchOperand";
+  let EncoderMethod = "getImmOpValueAsr1";
+  let DecoderMethod = "decodeSImmOperandAndLsl1<12>";
+  let MCOperandPredicate = [{
+    int64_t Imm;
+    if (MCOp.evaluateAsConstantImm(Imm))
+      return isShiftedInt<11, 1>(Imm);
+    return MCOp.isBareSymbolRef();
+  }];
+  let OperandType = "OPERAND_PCREL";
 }
 
 // A 13-bit signed immediate where the least significant bit is zero.
@@ -1527,27 +1661,27 @@ def : Pat<(binop_allwusers<add> GPR:$rs1, (AddiPair:$rs2)),
 //===----------------------------------------------------------------------===//
 
 let Predicates = [HasLoadStorePair], hasSideEffects = 0 in {
-def LWP : Pseudo<(outs GPR:$rd1, GPR:$rd2), (ins GPR:$rs1, uimm7:$imm7), [],
-                  "lwp", "$rd1, $rd2, ${imm7}(${rs1})">,
-                  Sched<[WriteLDW, WriteLDW, ReadMemBase]> {
+def LWP : LWPFormat<(outs GPR:$rd1, GPR:$rd2), (ins GPR:$rs1, uimm7_lsb00:$imm7),
+                    "lwp", "$rd1, $rd2, ${imm7}(${rs1})">,
+                    Sched<[WriteLDW, WriteLDW, ReadMemBase]> {
 let mayLoad = 1;
 let mayStore = 0;
 }
-def LDP : Pseudo<(outs GPR:$rd1, GPR:$rd2), (ins GPR:$rs1, uimm7:$imm7), [],
-                  "ldp", "$rd1, $rd2, ${imm7}(${rs1})">,
-                  Sched<[WriteLDD, WriteLDD, ReadMemBase]> {
+def LDP : LDPFormat<(outs GPR:$rd1, GPR:$rd2), (ins GPR:$rs1, uimm7_lsb000:$imm7),
+                    "ldp", "$rd1, $rd2, ${imm7}(${rs1})">,
+                    Sched<[WriteLDD, WriteLDD, ReadMemBase]> {
 let mayLoad = 1;
 let mayStore = 0;
 }
-def SWP : Pseudo<(outs), (ins GPR:$rs2, GPR:$rs3, GPR:$rs1, uimm7:$imm7), [],
-                  "swp", "$rs2, $rs3, ${imm7}(${rs1})">,
-                  Sched<[WriteSTW, ReadStoreData, ReadStoreData, ReadMemBase]> {
+def SWP : SWPFormat<(outs), (ins GPR:$rs2, GPR:$rs3, GPR:$rs1, uimm7_lsb00:$imm7),
+                    "swp", "$rs2, $rs3, ${imm7}(${rs1})">,
+                    Sched<[WriteSTW, ReadStoreData, ReadStoreData, ReadMemBase]> {
 let mayLoad = 0;
 let mayStore = 1;
 }
-def SDP : Pseudo<(outs), (ins GPR:$rs2, GPR:$rs3, GPR:$rs1, uimm7:$imm7), [],
-                  "sdp", "$rs2, $rs3, ${imm7}(${rs1})">,
-                  Sched<[WriteSTD, ReadStoreData, ReadStoreData, ReadMemBase]> {
+def SDP : SDPFormat<(outs), (ins GPR:$rs2, GPR:$rs3, GPR:$rs1, uimm7_lsb000:$imm7),
+                    "sdp", "$rs2, $rs3, ${imm7}(${rs1})">,
+                    Sched<[WriteSTD, ReadStoreData, ReadStoreData, ReadMemBase]> {
 let mayLoad = 0;
 let mayStore = 1;
 }
