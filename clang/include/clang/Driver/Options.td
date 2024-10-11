@@ -4918,6 +4918,10 @@ def mforced_sw_shadow_stack : Flag<["-"], "mforced-sw-shadow-stack">, Group<m_ri
 def mno_forced_sw_shadow_stack : Flag<["-"], "mno-forced-sw-shadow-stack">, Group<m_riscv_Features_Group>,
   HelpText<"Not force using software shadow stack when shadow-stack enabled">;
 } // let Flags = [TargetSpecific]
+def mload_store_pairs : Flag<["-"], "mload-store-pairs">, Group<m_riscv_Features_Group>;
+def mno_load_store_pairs : Flag<["-"], "mno-load-store-pairs">, Group<m_riscv_Features_Group>;
+def mccmov : Flag<["-"], "mccmov">, Group<m_riscv_Features_Group>;
+def mno_ccmov : Flag<["-"], "mno-ccmov">, Group<m_riscv_Features_Group>;
 let Flags = [TargetSpecific] in {
 def menable_experimental_extensions : Flag<["-"], "menable-experimental-extensions">, Group<m_Group>,
   HelpText<"Enable use of experimental RISC-V extensions.">;

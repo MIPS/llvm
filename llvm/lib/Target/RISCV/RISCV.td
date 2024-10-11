@@ -17,6 +17,23 @@ include "RISCVFeatures.td"
 def Procp8700
     : SubtargetFeature<"p8700", "RISCVProcFamily", "Others", "p8700 processor">;
 
+def FeatureCCMov : SubtargetFeature<"ccmov", "HasCCMov",
+                                   "true", "Using CCMov",
+                                   [Feature64Bit]>;
+
+def UsesCCMov
+    : Predicate<"Subtarget->useCCMovInsn()">,
+      AssemblerPredicate<(all_of FeatureCCMov), "'ccmov' instruction">;
+
+def FeatureLoadStorePairs
+    : SubtargetFeature<"load-store-pairs", "HasLoadStorePairs", "true",
+                       "Optimize for hardware load-store bonding">;
+
+def UsesLoadStorePairs
+    : Predicate<"Subtarget->useLoadStorePairs()">,
+      AssemblerPredicate<(all_of FeatureLoadStorePairs),
+                         "load and store pair instructions">;
+
 //===----------------------------------------------------------------------===//
 // RISC-V profiles supported.
 //===----------------------------------------------------------------------===//

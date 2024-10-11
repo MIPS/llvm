@@ -278,7 +278,9 @@ def P8700 : RISCVProcessorModel<"p8700",
                                  FeatureStdExtA,
                                  FeatureStdExtF,
                                  FeatureStdExtD,
-                                 FeatureStdExtC],
+                                 FeatureStdExtC,
+                                 FeatureCCMov,
+                                 FeatureLoadStorePairs],
                                 [Procp8700]>;
 
 def SIFIVE_P670 : RISCVProcessorModel<"sifive-p670", SiFiveP600Model,

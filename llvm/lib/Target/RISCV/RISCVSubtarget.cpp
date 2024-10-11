@@ -61,6 +61,16 @@ static cl::opt<unsigned> RISCVMinimumJumpTableEntries(
     "riscv-min-jump-table-entries", cl::Hidden,
     cl::desc("Set minimum number of entries to use a jump table on RISCV"));
 
+static cl::opt<bool> UseLoadStorePairsOpt(
+    "riscv-load-store-pairs",
+    cl::desc("RISCV: Optimize for load-store bonding"),
+    cl::init(false), cl::Hidden);
+
+static cl::opt<bool> UseCCMovInsn(
+    "riscv-ccmov",
+    cl::desc("RISCV: Use 'ccmov' instruction"),
+    cl::init(true), cl::Hidden);
+
 void RISCVSubtarget::anchor() {}
 
 RISCVSubtarget &
@@ -198,4 +208,12 @@ unsigned RISCVSubtarget::getMinimumJumpTableEntries() const {
   return RISCVMinimumJumpTableEntries.getNumOccurrences() > 0
              ? RISCVMinimumJumpTableEntries
              : TuneInfo->MinimumJumpTableEntries;
+}
+
+bool RISCVSubtarget::useLoadStorePairs() const {
+  return UseLoadStorePairsOpt && HasLoadStorePairs;
+}
+
+bool RISCVSubtarget::useCCMovInsn() const {
+  return UseCCMovInsn && HasCCMov;
 }
